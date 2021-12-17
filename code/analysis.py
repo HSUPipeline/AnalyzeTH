@@ -48,11 +48,15 @@ def get_spike_heading(spikes, times, head_dirs):
     return spike_hds
 
 
-def calc_trial_frs(trials, tlen=1.):
+def calc_trial_frs(trials, tlen=1., average=True):
     """Calculate firing rates per trial."""
 
-    fr_pre = np.mean([sum(trial < 0) for trial in trials]) / tlen
-    fr_post = np.mean([sum(trial > 0) for trial in trials]) / tlen
+    fr_pre = [sum(trial < 0) / tlen for trial in trials]
+    fr_post = [sum(trial > 0) / tlen for trial in trials]
+
+    if average:
+        fr_pre = np.mean(fr_pre)
+        fr_post = np.mean(fr_post)
 
     return fr_pre, fr_post
 
