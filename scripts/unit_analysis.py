@@ -25,7 +25,8 @@ from spiketools.spatial.occupancy import (compute_occupancy, compute_spatial_bin
                                           compute_spatial_bin_assignment)
 from spiketools.spatial.information import compute_spatial_information_2d, _compute_spatial_information
 
-from settings import TASK, DATA_PATH, REPORTS_PATH, RESULTS_PATH, IGNORE, SKIP_ALREADY_RUN
+from settings import TASK, DATA_PATH, REPORTS_PATH, RESULTS_PATH, IGNORE, SKIP_ALREADY_RUN, SKIP_FAILED
+from settings import TRIAL_RANGE, PLACE_BINS, CHEST_BINS, N_SURROGATES, SHUFFLE_APPROACH
 
 from convnwb.io import get_files, save_json
 
@@ -49,22 +50,9 @@ def main():
     # Get the list of NWB files
     nwbfiles = get_files(DATA_PATH, select='nwb')
 
-    # Get list of already generated run units, & drop file names
-    output_files = get_files(RESULTS_PATH / 'units' / TASK, select='json')
-    output_files = [file.split('.')[0] for file in output_files]
-
-    ## SETTINGS
-
-    # Define bins to use
-    bins = [7, 21]
-    chest_bins = [5, 7]
-
-    # Set the time range to analyze
-    trial_range = [-1000, 1000]
-
-    # Shuffle Settings
-    shuffle_approach = 'BINCIRC'
-    n_surrogates = 25
+    # Get list of already generated and failed units, & drop file names
+    output_files = get_files(RESULTS_PATH / 'units' / TASK, select='json', drop_extensions=True)
+    failed_files = get_files(RESULTS_PATH / 'units' / TASK / 'zFailed', select='json', drop_extensions=True)
 
     for nwbfilename in nwbfiles:
 
@@ -94,6 +82,7 @@ def main():
         # Extract head position data
         hd_times = nwbfile.acquisition['position']['head_direction'].timestamps[:]
         degrees = nwbfile.acquisition['position']['head_direction'].data[:]
+        # Fix for degree range - TODO fix upstream in conversion
         degrees = degrees + -np.min(degrees[degrees < 0])
 
         # Get the chest positions & trial indices
@@ -113,6 +102,10 @@ def main():
             # Check if unit already run
             if SKIP_ALREADY_RUN and name in output_files:
                 print('\tskipping unit (already run): \tU{:02d}'.format(unit_ind))
+                continue
+
+            if SKIP_FAILED and name in failed_files:
+                print('\tskipping unit (failed): \tU{:02d}'.format(unit_ind))
                 continue
 
             print('\trunning unit: \t\t\tU{:02d}'.format(unit_ind))
@@ -135,28 +128,28 @@ def main():
                 # Create shuffled time series for comparison
                 #   Note: some temporary quirks here to deal with UNIX time
                 temp = spikes - st
-                times_shuffle = shuffle_spikes(temp, shuffle_approach, n_surrogates)
+                times_shuffle = shuffle_spikes(temp, SHUFFLE_APPROACH, N_SURROGATES)
                 times_shuffle = times_shuffle + st
 
                 # Compute firing related to chest presentation
                 all_chests = []
                 for opening in nwbfile.trials.chest_opening[:]:
-                    all_chests.append(restrict_range(spikes, opening + trial_range[0], opening + trial_range[1]) - opening)
+                    all_chests.append(restrict_range(spikes, opening + TRIAL_RANGE[0], opening + TRIAL_RANGE[1]) - opening)
                 fr_pre, fr_post = calc_trial_frs(all_chests)
 
                 # Compute bin edges
-                x_bin_edges, y_bin_edges = compute_spatial_bin_edges(pos.data[:], bins)
+                x_bin_edges, y_bin_edges = compute_spatial_bin_edges(pos.data[:], PLACE_BINS)
 
                 # Get position values for each spike
                 spike_xs, spike_ys = get_spike_positions(spikes, pos.timestamps[:], pos.data[:])
                 spike_positions = np.array([spike_xs, spike_ys])
 
                 # Compute occupancy
-                occ = compute_occupancy(pos.data[:], pos.timestamps[:], bins, speed)
+                occ = compute_occupancy(pos.data[:], pos.timestamps[:], PLACE_BINS, speed)
 
                 # Compute spatial bin assignments & binned firing
                 x_binl, y_binl = compute_spatial_bin_assignment(spike_positions, x_bin_edges, y_bin_edges)
-                bin_firing = compute_bin_firing(x_binl, y_binl, bins)
+                bin_firing = compute_bin_firing(x_binl, y_binl, PLACE_BINS)
 
                 # Normalize bin firing by occupancy
                 with warnings.catch_warnings():
@@ -168,7 +161,7 @@ def main():
 
                 # Compute edges for chest binning
                 area_range = [[360, 410], [320, 400]]
-                x_edges, y_edges = compute_spatial_bin_edges(pos.data[:], chest_bins, area_range=area_range)
+                x_edges, y_edges = compute_spatial_bin_edges(pos.data[:], CHEST_BINS, area_range=area_range)
 
                 # Assign each chest to a bin
                 chest_pos = np.array([chest_xs, chest_ys])
@@ -179,7 +172,7 @@ def main():
                 ch_ybin = ch_ybin - 1
 
                 # Compute chest occupancy
-                chest_occupancy = compute_bin_firing(ch_xbin, ch_ybin, chest_bins)
+                chest_occupancy = compute_bin_firing(ch_xbin, ch_ybin, CHEST_BINS)
 
 
                 # Compute firing rates per segment across all trials
@@ -188,7 +181,7 @@ def main():
 
                 # Collect firing per chest location across all trials
                 target_bins = compute_spatial_target_bins(spikes, trial_starts, chest_openings, chest_trials,
-                                                          pos.timestamps, pos.data[:], chest_bins, ch_xbin, ch_ybin)
+                                                          pos.timestamps, pos.data[:], CHEST_BINS, ch_xbin, ch_ybin)
 
                 ## STATISTICS
 
@@ -207,9 +200,9 @@ def main():
                 ## SURROGATES
 
                 # Compute surrogate measures
-                place_surrs = np.zeros(n_surrogates)
-                target_surrs = np.zeros(n_surrogates)
-                hd_surrs = np.zeros(n_surrogates)
+                place_surrs = np.zeros(N_SURROGATES)
+                target_surrs = np.zeros(N_SURROGATES)
+                hd_surrs = np.zeros(N_SURROGATES)
 
                 for ind, stimes in enumerate(times_shuffle):
 
@@ -219,7 +212,7 @@ def main():
 
                     # TARGET
                     s_target_bins = compute_spatial_target_bins(stimes, trial_starts, chest_openings, chest_trials,
-                                                                pos.timestamps, pos.data[:], chest_bins, ch_xbin, ch_ybin)
+                                                                pos.timestamps, pos.data[:], CHEST_BINS, ch_xbin, ch_ybin)
                     target_surrs[ind] = _compute_spatial_information(s_target_bins, chest_occupancy)
 
                     # HEAD DIRECTION
@@ -253,10 +246,10 @@ def main():
 
                 # 01: unit information
                 ax01 = plt.subplot(grid[0, 1])
-                text = create_unit_str(create_unit_info(spikes))
+                text = create_unit_str(create_unit_info(nwbfile.units[unit_ind]))
                 ax01.text(0.5, 0.7, text, fontdict={'fontsize' : 14}, ha='center', va='center');
                 ax01.axis('off');
-                ax01.set_title("Unit Information", fontdict={'fontsize' : 16})
+                ax01.set_title("Unit Information", fontdict={'fontsize' : 16}, y=1.2)
 
                 # 02: inter-spike intervals
                 ax02 = plt.subplot(grid[0, 2])
@@ -265,7 +258,7 @@ def main():
 
                 # 10: chest related firing
                 ax10 = plt.subplot(grid[1:3, 0:2])
-                plot_rasters(all_chests, xlim=trial_range, vline=0, figsize=(10, 7), ax=ax10)
+                plot_rasters(all_chests, xlim=TRIAL_RANGE, vline=0, figsize=(10, 7), ax=ax10)
                 title_str = 'All Trials - Pre: {:1.2f} - Pos: {:1.2f}  (t:{:1.2f}, p:{:1.2f})'
                 tcol10 = 'red' if fr_p_val < 0.05 else 'black'
                 ax10.set_title(title_str.format(fr_pre, fr_post, fr_t_val, fr_p_val), color=tcol10)
@@ -279,17 +272,17 @@ def main():
                 empty_mask = np.invert(full_mask)
 
                 # Sub-select full & empty chest trials
-                empty_trials = select_from_list(all_trials, empty_mask)
-                full_trials = select_from_list(all_trials, full_mask)
+                empty_trials = select_from_list(all_chests, empty_mask)
+                full_trials = select_from_list(all_chests, full_mask)
 
                 # Calculate firing rate pre & post chest opening
                 fr_pre_e, fr_post_e = calc_trial_frs(empty_trials)
                 fr_pre_f, fr_post_f = calc_trial_frs(full_trials)
 
                 # Plot a comparison of full and empty trials
-                plot_rasters(empty_trials, xlim=trial_range, vline=0, ax=ax12,
+                plot_rasters(empty_trials, xlim=TRIAL_RANGE, vline=0, ax=ax12,
                              title='Empty Chests - Pre: {:1.2f} - Pos: {:1.2f}'.format(fr_pre_e, fr_post_e))
-                plot_rasters(full_trials, xlim=trial_range, vline=0, ax=ax22,
+                plot_rasters(full_trials, xlim=TRIAL_RANGE, vline=0, ax=ax22,
                              title='Full Chests - Pre: {:1.2f} - Pos: {:1.2f}'.format(fr_pre_f, fr_post_f))
 
                 # ax30: positional firing
@@ -339,6 +332,7 @@ def main():
                 # Save out report
                 report_name = 'unit_report_' + name + '.pdf'
                 plt.savefig(REPORTS_PATH / 'units' / TASK / report_name)
+                plt.close()
 
                 ## COLLECT RESULTS
 
@@ -366,8 +360,8 @@ def main():
 
             except Exception as excp:
                 print('\t\tissue running unit # {}'.format(unit_ind))
-                raise
-                #continue
+                save_json({}, name + '.json', folder=str(RESULTS_PATH / 'units' / TASK / 'zFailed'))
+                continue
 
 if __name__ == '__main__':
     main()
