@@ -1,4 +1,8 @@
-pynwb
 numpy
+scipy
 matplotlib
 seaborn
+pingouin
+pynwb
+convnwb @ git+https://github.com/JacobsSU/convnwb.git@main
+spiketools @ git+https://github.com/spiketools/spiketools.git@main

@@ -12,7 +12,9 @@ This repository requires Python >= 3.7.
 
 As well as typical scientific Python packages, dependencies include:
 - [pynwb](https://github.com/NeurodataWithoutBorders/pynwb)
+- [convnwb](https://github.com/JacobsSU/convnwb)
 - [spiketools](https://github.com/spiketools/spiketools)
+- [pingouin](https://github.com/raphaelvallat/pingouin)
 
 The full list of dependencies is listed in `requirements.txt`.
 
