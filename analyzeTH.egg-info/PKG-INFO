@@ -1,0 +1,67 @@
+Metadata-Version: 2.1
+Name: analyzeTH
+Version: 0.1.0.dev0
+Summary: Module for analyzing (single neuron spiking for now) data from the Treasure Hunt memory task.
+Home-page: https://github.com/JacobsSU/AnalyzeTH
+Maintainer: ['Thomas Donoghue', 'Cameron Holman', 'Zhixian (Claire) Han']
+Maintainer-email: ['tdonoghue.research@gmail.com', 'cameron.holman@columbia.edu', 'zh2497@columbia.edu']
+License: Apache License, 2.0
+Download-URL: https://github.com/JacobsSU/AnalyzeTH
+Project-URL: Documentation, WIP
+Project-URL: Bug Reports, WIP
+Project-URL: Source, WIP
+Keywords: neuroscience,single units,spike analyses,electrophysiology,Treasure Hunt,memory,spatial navigation
+Platform: any
+Classifier: Development Status :: 3 - AlphaIntended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: MacOS
+Classifier: Operating System :: POSIX
+Classifier: Operating System :: Unix
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Requires-Python: >=3.6
+License-File: LICENSE
+
+# Treasure Hunt Analyses
+
+Analysis repository for Treasure Hunt.
+
+## Overview
+
+This repository analyses data from the Treasure Hunt task, a spatial-navigation memory task, with data from implanted microwires.
+
+## Requirements
+
+This repository requires Python >= 3.7.
+
+As well as typical scientific Python packages, dependencies include:
+- [pynwb](https://github.com/NeurodataWithoutBorders/pynwb)
+- [convnwb](https://github.com/JacobsSU/convnwb)
+- [spiketools](https://github.com/spiketools/spiketools)
+- [pingouin](https://github.com/raphaelvallat/pingouin)
+
+The full list of dependencies is listed in `requirements.txt`.
+
+## Repository Layout
+
+This repository is set up in the following way:
+- `code/` contains custom code and utilities for doing the analyses
+- `figures/` contains saved output figures
+- `notebooks/` contains notebooks for exploring analyses
+- `scripts/` contains stand alone scripts
+
+## Data
+
+The datasets analyzed in this project are from human subjects with implanted microwires.
+
+Data notes:
+- Datasets for this project are organized into the [NWB](https://www.nwb.org/) format.
+- Basic preprocessing and data conversion is done in the [ConvertTH](https://github.com/JacobsSU/ConvertTH) repository.
+- Spike sorting, to isolate putative single-neurons, has been performed on this data.
+
+
