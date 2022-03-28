@@ -2,7 +2,7 @@
 
 import matplotlib.pyplot as plt
 
-from analysis import bin_circular
+from analyzeth.analysis import bin_circular
 
 ###################################################################################################
 ###################################################################################################

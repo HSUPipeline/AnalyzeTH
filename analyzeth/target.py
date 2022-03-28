@@ -7,7 +7,7 @@ import numpy as np
 from spiketools.utils import restrict_range
 from spiketools.utils.data import get_value_by_time, get_value_by_time_range
 
-from analysis import get_spike_positions
+from analyzeth.analysis import get_spike_positions
 
 ###################################################################################################
 ###################################################################################################
