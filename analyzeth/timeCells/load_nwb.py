@@ -72,7 +72,7 @@ def load_nwb(task = None,
         print('Session not set \t | Session from SETTINGS: \t {}'.format(session))
     if data_folder == None:
         data_folder = SETTINGS.DATA_FOLDER
-        print('Data folder not set \t | Data folder from settings: \t {} \n'.format(data_folder))
+        print('Data folder not set \t | Data folder from SETTINGS: \t {} \n'.format(data_folder))
 
     # Define expected NWB file name & full path
     file_name = '_'.join([task, subject, 'session_' + str(session)]) + '.nwb'

@@ -28,11 +28,11 @@ TIME_BIN_LENGTH_MS = 1000
 
 
 
-# ---- Plotting Options for This Run ----
+# ---- Plotting Options for this Run ----
 # Note: see settings_plots.py for general formatting
 
 # Curent date for saving figs
-DATE = '220325'
+DATE = ''
 
 # Save 
 SAVE_FIGURES = False
