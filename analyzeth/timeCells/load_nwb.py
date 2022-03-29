@@ -4,9 +4,7 @@ import glob
 import thefuzz      # Levenshtein distancce fuzzy string matching
 
 # Settings
-from analyzeth.timeCells import settings_TC as SETTINGS
-
-# NOTE: may make sense to update glob to os.walk to check subdirs 
+from analyzeth.timeCells import settings_TC as SETTINGS 
 
 
 def load_nwb(task = None,
@@ -30,6 +28,8 @@ def load_nwb(task = None,
         subj = 'wv001',
         session = 2,
         data_folder = '/home1/cameron.holman/data/wvu/'
+
+    NOTE: may make sense to update glob to os.walk to check subdirs
 
     PARAMETERS
     ----------
@@ -60,7 +60,9 @@ def load_nwb(task = None,
         NWB file containing data for the given TASK + SUBJ + SESSION
     """
 
-    # Check for given arguments and load from SETTINGS
+    # Check for given arguments and load from SETTINGS 
+    #       @cmh this could be moved to args, but want to print where 
+    #       loading data is taken from
     if task == None:
         task = SETTINGS.TASK
         print ('Task not set \t\t | Task from SETTINGS: \t\t {}'.format(task))
