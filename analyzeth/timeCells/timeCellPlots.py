@@ -1,6 +1,16 @@
 
 # Helper functions to make plots for time cell analysis. These
-# should be called by using the analysis functions in timeCellAnalysis.py 
+# should be called by using the analysis functions in timeCellAnalysis.py.
+# 
+# 
+# To plot the binned counts or firing rates for a unit in one trial or across
+# the session, call the appropriate analysis function with PLOT = True as an argument.
+# 
+# To plot the bined counts or firing rates for a unit along with movement plot for a
+# single trial, call the appropriate analysis function with PLOT_WITH_MOVEMENT = True
+#
+
+
 
 
 # Imports and format settings
