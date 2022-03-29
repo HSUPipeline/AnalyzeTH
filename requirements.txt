@@ -6,3 +6,5 @@ pingouin
 pynwb
 convnwb @ git+https://github.com/JacobsSU/convnwb.git@main
 spiketools @ git+https://github.com/spiketools/spiketools.git@main
+thefuzz @ git+https://github.com/seatgeek/thefuzz
+glob
