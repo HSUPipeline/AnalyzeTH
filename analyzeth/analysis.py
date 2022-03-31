@@ -31,9 +31,75 @@ def get_spike_positions(spikes, times, positions):
     return spike_xs, spike_ys
 
 
-def get_spike_heading(spikes, times, head_dirs):
-    """Get head direciton for spike times."""
+def get_spike_heading(spike_times, hd_times, hd_degrees):
+    """Get head direciton for spike times.
+    
+    For each spike, search for the last recorded HD. HD is recorded only
+    when subject changes direction.
 
+    Parameters
+    ----------
+    spike times: 1D arr
+        1D array of spike times in ms
+
+    hd_times: 1D arr
+        1D array of times when hd was recorded
+        ix matches hd_degrees
+
+    hd_degrees: 1D arr
+        1D array of head direction in degrees (0-360)
+        ix matches hd_times
+    
+    match_freedom_ms: int
+        default = 10 (?)
+        leniency in finding matches. this should not be needed with the new method
+    
+    Returns
+    -------
+    spike_hds: 1D arr
+        1D array of head directions for each spike
+        len(spike_hds) should match len(spikes)
+    """
+
+    spike_hds = []
+
+    for spike_time in spike_times:
+        hd_idx = np.abs(hd_times[hd_times <= spike_time] - spike_time).argmin() 
+        spike_hds.append(hd_degrees[hd_idx])
+
+    return spike_hds
+
+
+def get_spike_heading_old(spikes, times, head_dirs, match_freedom_ms = 100):
+    """Get head direciton for spike times.
+    
+    For each spike, search for the closest recorded HD within theshold set
+    with match_freedom_ms
+
+    Deprecated - see above
+
+    Parameters
+    ----------
+    spikes: 1D arr
+        1D array of spike times in ms
+
+    times: 1D arr
+        1D array of times when hd was recorded
+        ix matches head_dirs
+
+    head_dirs: 1D arr
+        1D array of head direction in degrees (0-360)
+        ix matches times
+    
+    match_freedom_ms: int
+        default = 100 
+    
+    Returns
+    -------
+    spike_hds: 1D arr
+        1D array of head directions for each spike
+        len(spike_hds) should match len(spikes)
+    """
     spike_hds = []
 
     for spike in spikes:
@@ -41,7 +107,7 @@ def get_spike_heading(spikes, times, head_dirs):
         idx = (np.abs(times - spike)).argmin()
         diff = np.abs(times[idx] - spike)
 
-        if diff < 100:
+        if diff < match_freedom_ms:
 
             spike_hds.append(head_dirs[idx])
 
