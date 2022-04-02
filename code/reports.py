@@ -4,6 +4,8 @@ import numpy as np
 
 from spiketools.measures import compute_spike_rate
 
+from utils import convert_ms_to_minutes
+
 ###################################################################################################
 ###################################################################################################
 
@@ -34,11 +36,11 @@ def create_group_sessions_str(summary):
     """Create strings of detailed session information."""
 
     out = []
-    strtemp = "{}: {:3d} units, {:3d} trials ({:5.2f}% correct, average error of {:5.2f})"
+    strtemp = "{} ({:3d} trials): {:3d} keep units ({:3d} total), ({:5.2f}% correct, avg error: {:5.2f})"
     for ind in range(len(summary['ids'])):
-        out.append(strtemp.format(summary['ids'][ind], summary['n_units'][ind],
-                                  summary['n_trials'][ind], summary['correct'][ind],
-                                  summary['error'][ind]))
+        out.append(strtemp.format(summary['ids'][ind], summary['n_trials'][ind],
+                                  summary['n_keep'][ind], summary['n_units'][ind],
+                                  summary['correct'][ind], summary['error'][ind]))
 
     return out
 
@@ -48,11 +50,16 @@ def create_subject_info(nwbfile):
 
     subject_info = {}
 
+    st = nwbfile.intervals['trials'][0]['start_time'].values[0]
+    en = nwbfile.intervals['trials'][-1]['stop_time'].values[0]
+
     subject_info['n_units'] = len(nwbfile.units)
+    subject_info['n_keep'] = sum(nwbfile.units.keep[:])
     subject_info['subject_id'] = nwbfile.subject.subject_id
     subject_info['session_id'] = nwbfile.session_id
-    subject_info['trials_start'] = nwbfile.intervals['trials'][0]['start_time'].values[0]
-    subject_info['trials_end'] = nwbfile.intervals['trials'][-1]['stop_time'].values[0]
+    subject_info['trials_start'] = st
+    subject_info['trials_end'] = en
+    subject_info['length'] = convert_ms_to_minutes(en)
 
     return subject_info
 
@@ -62,10 +69,9 @@ def create_subject_str(subject_info):
 
     string = '\n'.join([
         'Recording:  {:5s}'.format(subject_info['session_id']),
-        'Number of units:    {:10d}'.format(subject_info['n_units']),
-        'Recording time range:',
-        '{:5.4f} -\n {:5.4f}'.format(subject_info['trials_start'],
-                                   subject_info['trials_end'])
+        'Total # units:   {:10d}'.format(subject_info['n_units']),
+        'Keep # units:    {:10d}'.format(subject_info['n_keep']),
+        'Session length:     {:.2f}'.format(subject_info['length'])
     ])
 
     return string
@@ -112,16 +118,17 @@ def create_behav_str(behav_info):
 def create_unit_info(unit):
     """Create a dictionary of unit information."""
 
-    spikes = unit['spike_times'].values[0] / 1000
+    spikes = unit['spike_times'].values[0]
 
     unit_info = {}
     unit_info['n_spikes'] = len(spikes)
-    unit_info['spike_rate'] = compute_spike_rate(spikes) * 1000
+    unit_info['spike_rate'] = compute_spike_rate(spikes / 1000)
     unit_info['first_spike'] = spikes[0]
     unit_info['last_spike'] = spikes[-1]
     unit_info['location'] = unit['location'].values[0]
     unit_info['channel'] = unit['channel'].values[0]
     unit_info['cluster'] = unit['cluster'].values[0]
+    unit_info['keep'] = unit['keep'].values[0]
 
     return unit_info
 
@@ -133,10 +140,9 @@ def create_unit_str(unit_info):
         '\n',
         'Number of spikes:    {:10d}'.format(unit_info['n_spikes']),
         'Average spike rate:  {:10.4f}'.format(unit_info['spike_rate']),
-        'Recording time range:',
-        '{:5.4f} -\n {:5.4f}'.format(unit_info['first_spike'], unit_info['last_spike']),
-        'Unit location: {}'.format(unit_info['location']),
-        'Channel & Cluster: {} - {}'.format(unit_info['channel'], unit_info['cluster'])
+        'Location: {}'.format(unit_info['location']),
+        'Channel: {}'.format(unit_info['channel']),
+        'Cluster: {}'.format(unit_info['cluster'])
     ])
 
     return string
