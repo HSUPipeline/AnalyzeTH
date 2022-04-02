@@ -34,6 +34,7 @@ def main():
         'ids' : [],
         'n_trials' : [],
         'n_units' : [],
+        'n_keep' : [],
         'error' : [],
         'correct' : []
     }
@@ -52,14 +53,15 @@ def main():
         summary['ids'].append(session_id)
         summary['n_trials'].append(len(nwbfile.trials))
         summary['n_units'].append(len(nwbfile.units))
-
+        summary['n_keep'].append(sum(nwbfile.units.keep[:]))
         summary['error'].append(np.median(nwbfile.trials.error[:]))
         summary['correct'].append(np.mean(nwbfile.trials.correct[:]))
 
         # Initialize figure
         _ = plt.figure(figsize=(15, 12))
         grid = gridspec.GridSpec(3, 3, wspace=0.4, hspace=1.0)
-        plt.suptitle('Group Report - {} - {} sessions'.format(TASK, len(summary['ids'])), fontsize=24, y=0.95);
+        plt.suptitle('Group Report - {} - {} sessions'.format(TASK, len(summary['ids'])),
+                     fontsize=24, y=0.95);
 
         # 00: group text
         ax00 = plt.subplot(grid[0, 0])

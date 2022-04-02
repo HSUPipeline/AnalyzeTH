@@ -11,6 +11,8 @@ from matplotlib import gridspec
 from pynwb import NWBHDF5IO
 from pingouin import convert_angles, circ_rayleigh
 
+from convnwb.io import get_files, save_json
+
 from spiketools.measures import compute_isis
 from spiketools.stats.shuffle import shuffle_spikes
 from spiketools.plts.spikes import plot_waveform, plot_isis
@@ -23,12 +25,12 @@ from spiketools.utils import restrict_range
 from spiketools.stats.permutations import zscore_to_surrogates, compute_empirical_pvalue
 from spiketools.spatial.occupancy import (compute_occupancy, compute_spatial_bin_edges,
                                           compute_spatial_bin_assignment)
-from spiketools.spatial.information import compute_spatial_information_2d, _compute_spatial_information
+from spiketools.spatial.information import (compute_spatial_information_2d,
+                                            _compute_spatial_information)
 
-from settings import TASK, DATA_PATH, REPORTS_PATH, RESULTS_PATH, IGNORE, SKIP_ALREADY_RUN, SKIP_FAILED
+from settings import (TASK, DATA_PATH, REPORTS_PATH, RESULTS_PATH, IGNORE,
+                      SKIP_ALREADY_RUN, SKIP_FAILED)
 from settings import TRIAL_RANGE, PLACE_BINS, CHEST_BINS, N_SURROGATES, SHUFFLE_APPROACH
-
-from convnwb.io import get_files, save_json
 
 # Import local code
 import sys
@@ -37,7 +39,7 @@ from utils import select_from_list
 from analysis import calc_trial_frs, get_spike_positions, compute_bin_firing, get_spike_heading
 from plts import plot_polar_hist
 from target import compute_serial_position_fr, compute_spatial_target_bins
-from reports_unit import *
+from reports import *
 
 ###################################################################################################
 ###################################################################################################
@@ -51,8 +53,10 @@ def main():
     nwbfiles = get_files(DATA_PATH, select='nwb')
 
     # Get list of already generated and failed units, & drop file names
-    output_files = get_files(RESULTS_PATH / 'units' / TASK, select='json', drop_extensions=True)
-    failed_files = get_files(RESULTS_PATH / 'units' / TASK / 'zFailed', select='json', drop_extensions=True)
+    output_files = get_files(RESULTS_PATH / 'units' / TASK,
+                             select='json', drop_extensions=True)
+    failed_files = get_files(RESULTS_PATH / 'units' / TASK / 'zFailed',
+                             select='json', drop_extensions=True)
 
     for nwbfilename in nwbfiles:
 
@@ -81,9 +85,9 @@ def main():
 
         # Extract head position data
         hd_times = nwbfile.acquisition['position']['head_direction'].timestamps[:]
-        degrees = nwbfile.acquisition['position']['head_direction'].data[:]
+        hd_degrees = nwbfile.acquisition['position']['head_direction'].data[:]
         # Fix for degree range - TODO fix upstream in conversion
-        degrees = degrees + -np.min(degrees[degrees < 0])
+        hd_degrees = hd_degrees + -np.min(hd_degrees[hd_degrees < 0])
 
         # Get the chest positions & trial indices
         chest_xs, chest_ys = nwbfile.acquisition['chest_positions']['chest_positions'].data[:]
@@ -112,7 +116,6 @@ def main():
 
             # Extract spikes for a unit of interest
             spikes = nwbfile.units.get_unit_spike_times(unit_ind)
-            spikes = spikes / 1000
 
             # Drop spikes until task time
             st = nwbfile.trials['start_time'][0]
@@ -126,15 +129,13 @@ def main():
                 ## Compute measures
 
                 # Create shuffled time series for comparison
-                #   Note: some temporary quirks here to deal with UNIX time
-                temp = spikes - st
-                times_shuffle = shuffle_spikes(temp, SHUFFLE_APPROACH, N_SURROGATES)
-                times_shuffle = times_shuffle + st
+                times_shuffle = shuffle_spikes(spikes, SHUFFLE_APPROACH, N_SURROGATES)
 
                 # Compute firing related to chest presentation
                 all_chests = []
                 for opening in nwbfile.trials.chest_opening[:]:
-                    all_chests.append(restrict_range(spikes, opening + TRIAL_RANGE[0], opening + TRIAL_RANGE[1]) - opening)
+                    time_range = restrict_range(spikes, opening + TRIAL_RANGE[0], opening + TRIAL_RANGE[1])
+                    all_chests.append(time_range - opening)
                 fr_pre, fr_post = calc_trial_frs(all_chests)
 
                 # Compute bin edges
@@ -157,11 +158,12 @@ def main():
                     norm_bin_firing = bin_firing / occ
 
                 # Get head direction for each spike
-                spike_hds = get_spike_heading(spikes, hd_times, degrees)
+                spike_hds = get_spike_heading(spikes, hd_times, hd_degrees)
 
                 # Compute edges for chest binning
                 area_range = [[360, 410], [320, 400]]
-                x_edges, y_edges = compute_spatial_bin_edges(pos.data[:], CHEST_BINS, area_range=area_range)
+                x_edges, y_edges = compute_spatial_bin_edges(pos.data[:], CHEST_BINS,
+                                                             area_range=area_range)
 
                 # Assign each chest to a bin
                 chest_pos = np.array([chest_xs, chest_ys])
@@ -180,8 +182,10 @@ def main():
                                                      chest_trials, pos.timestamps, pos.data[:])
 
                 # Collect firing per chest location across all trials
-                target_bins = compute_spatial_target_bins(spikes, trial_starts, chest_openings, chest_trials,
-                                                          pos.timestamps, pos.data[:], CHEST_BINS, ch_xbin, ch_ybin)
+                target_bins = compute_spatial_target_bins(spikes, trial_starts,
+                                                          chest_openings, chest_trials,
+                                                          pos.timestamps, pos.data[:],
+                                                          CHEST_BINS, ch_xbin, ch_ybin)
 
                 ## STATISTICS
 
@@ -189,7 +193,8 @@ def main():
                 fr_t_val, fr_p_val = ttest_rel(*calc_trial_frs(all_chests, average=False))
 
                 # Compute the spatial information
-                place_info = compute_spatial_information_2d(spike_xs, spike_ys, [x_bin_edges, y_bin_edges], occ)
+                place_info = compute_spatial_information_2d(spike_xs, spike_ys,
+                                                            [x_bin_edges, y_bin_edges], occ)
 
                 # Compute spatial information for the target firing
                 target_info = _compute_spatial_information(target_bins, chest_occupancy)
@@ -208,15 +213,18 @@ def main():
 
                     # PLACE
                     s_spike_xs, s_spike_ys = get_spike_positions(stimes, pos.timestamps, pos.data[:])
-                    place_surrs[ind] = compute_spatial_information_2d(s_spike_xs, s_spike_ys, [x_bin_edges, y_bin_edges], occ)
+                    place_surrs[ind] = compute_spatial_information_2d(s_spike_xs, s_spike_ys,
+                                                                      [x_bin_edges, y_bin_edges], occ)
 
                     # TARGET
-                    s_target_bins = compute_spatial_target_bins(stimes, trial_starts, chest_openings, chest_trials,
-                                                                pos.timestamps, pos.data[:], CHEST_BINS, ch_xbin, ch_ybin)
+                    s_target_bins = compute_spatial_target_bins(stimes, trial_starts,
+                                                                chest_openings, chest_trials,
+                                                                pos.timestamps, pos.data[:],
+                                                                CHEST_BINS, ch_xbin, ch_ybin)
                     target_surrs[ind] = _compute_spatial_information(s_target_bins, chest_occupancy)
 
                     # HEAD DIRECTION
-                    s_spike_hds = get_spike_heading(stimes, hd_times, degrees)
+                    s_spike_hds = get_spike_heading(stimes, hd_times, hd_degrees)
                     hd_surrs[ind] = circ_rayleigh(convert_angles(s_spike_hds))[0]
 
 
@@ -352,7 +360,6 @@ def main():
 
                 results['hd_surr_p'] = hd_surr_p_val
                 results['hd_surr_z'] = hd_z_score
-
 
                 # Save out unit results
                 save_json(results, name + '.json', folder=str(RESULTS_PATH / 'units' / TASK))

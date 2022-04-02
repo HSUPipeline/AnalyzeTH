@@ -8,7 +8,7 @@ from pathlib import Path
 ## PATHS
 
 # Set which task to process
-TASK = 'THF'
+TASK = 'THO'
 
 # Set the data path to load from
 BASE_PATH = Path('/Users/tom/Documents/Data/JacobsLab/TH/')

@@ -8,6 +8,8 @@ from matplotlib import gridspec
 
 from pynwb import NWBHDF5IO
 
+from convnwb.io import get_files
+
 from spiketools.measures import compute_spike_rate
 from spiketools.spatial.occupancy import compute_occupancy
 
@@ -17,13 +19,11 @@ from spiketools.plts.spikes import plot_unit_frs
 
 from settings import TASK, DATA_PATH, REPORTS_PATH, IGNORE, BINS
 
-from convnwb.io import get_files
-
 # Import local code
 import sys
 sys.path.append('../code')
 from plts import plot_polar_hist
-from reports_session import *
+from reports import *
 
 ###################################################################################################
 ###################################################################################################
@@ -68,7 +68,7 @@ def main():
 
         # Calculate the average overall firing rate of each neuron
         n_units = len(nwbfile.units)
-        frs = [compute_spike_rate(nwbfile.units.get_unit_spike_times(s_ind) / 1000000) \
+        frs = [compute_spike_rate(nwbfile.units.get_unit_spike_times(s_ind) / 1000) \
             for s_ind in range(n_units)]
 
         # Compute occupancy
