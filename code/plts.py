@@ -20,7 +20,7 @@ def plot_task_structure(trials, ax=None, **plt_kwargs):
                           [trials.distractor_start[:], trials.distractor_end[:]],
                           [trials.recall_start[:], trials.recall_end[:]]],
                          [trials.start_time[:], trials.stop_time[:]],
-                         shade_colors=['green', 'orange', 'blue'],
+                         shade_colors=['green', 'orange', 'purple'],
                          line_colors=['red', 'black'],
                          line_kwargs={'lw' : 1.25},
                          ax=ax, **plt_kwargs)

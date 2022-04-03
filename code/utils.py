@@ -4,11 +4,19 @@
 ###################################################################################################
 
 def select_from_list(lst, select):
-    """Select elements from a list based on a boolean mask."""
+    """Select elements from a list based on a boolean mask.
+
+    Parameters
+    ----------
+    lst : list
+        A list of values to select from.
+    select : list of bool
+        Indicator for which elements to select.
+
+    Returns
+    -------
+    lst
+        Selected elements from the list.
+    """
 
     return [el for el, sel in zip(lst, select) if sel]
-
-def convert_ms_to_minutes(ms):
-    """Convert a time value from milliseconds to minutes."""
-
-    return ms / 1000 / 60

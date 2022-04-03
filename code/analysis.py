@@ -5,11 +5,8 @@ import numpy as np
 ###################################################################################################
 ###################################################################################################
 
-def get_spike_positions(spikes, times, positions):
+def get_spike_positions(spikes, times, positions, threshold=100):
     """Get xy-positions for spike times."""
-
-    #tspike, tpos = [], []
-    #inds = []
 
     spike_xs = []
     spike_ys = []
@@ -19,19 +16,15 @@ def get_spike_positions(spikes, times, positions):
         idx = (np.abs(times - spike)).argmin()
         diff = np.abs(times[idx] - spike)
 
-        if diff < 100:
+        if diff < threshold:
 
             spike_xs.append(positions[0, idx])
             spike_ys.append(positions[1, idx])
 
-            # inds.append(idx)
-            # tspike.append(spike)
-            # tpos.append(ptimes[idx])
-
     return spike_xs, spike_ys
 
 
-def get_spike_heading(spikes, times, head_dirs):
+def get_spike_heading(spikes, times, head_dirs, threshold=100):
     """Get head direciton for spike times."""
 
     spike_hds = []
@@ -41,7 +34,7 @@ def get_spike_heading(spikes, times, head_dirs):
         idx = (np.abs(times - spike)).argmin()
         diff = np.abs(times[idx] - spike)
 
-        if diff < 100:
+        if diff < threshold:
 
             spike_hds.append(head_dirs[idx])
 
