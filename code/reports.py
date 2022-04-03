@@ -121,14 +121,15 @@ def create_unit_info(unit):
     spikes = unit['spike_times'].values[0]
 
     unit_info = {}
+    unit_info['wvID'] = unit['wvID'].values[0]
     unit_info['n_spikes'] = len(spikes)
     unit_info['spike_rate'] = compute_spike_rate(spikes / 1000)
     unit_info['first_spike'] = spikes[0]
     unit_info['last_spike'] = spikes[-1]
     unit_info['location'] = unit['location'].values[0]
     unit_info['channel'] = unit['channel'].values[0]
-    unit_info['cluster'] = unit['cluster'].values[0]
-    unit_info['keep'] = unit['keep'].values[0]
+    unit_info['cluster'] = int(unit['cluster'].values[0])
+    unit_info['keep'] = bool(unit['keep'].values[0])
 
     return unit_info
 
@@ -138,11 +139,13 @@ def create_unit_str(unit_info):
 
     string = '\n'.join([
         '\n',
-        'Number of spikes:    {:10d}'.format(unit_info['n_spikes']),
-        'Average spike rate:  {:10.4f}'.format(unit_info['spike_rate']),
-        'Location: {}'.format(unit_info['location']),
-        'Channel: {}'.format(unit_info['channel']),
-        'Cluster: {}'.format(unit_info['cluster'])
+        'WVID:    {}'.format(unit_info['wvID']),
+        'Keep:    {}'.format(unit_info['keep']),
+        '# spikes:   {:5d}'.format(unit_info['n_spikes']),
+        'firing rate:  {:5.4f}'.format(unit_info['spike_rate']),
+        'Location:   {} ({})'.format(unit_info['location'],
+                                   unit_info['channel']),
+        'Cluster:   {}'.format(unit_info['cluster'])
     ])
 
     return string
