@@ -69,25 +69,3 @@ def compute_bin_firing(x_binl, y_binl, bins):
         bin_firing[x_bl - 1, y_bl - 1] += 1
 
     return bin_firing
-
-
-def bin_circular(degrees):
-    """Bin circular data.
-
-    Parameters
-    ----------
-    degrees : 1d array
-        Data to bin.
-
-    Returns
-    -------
-    bin_edges : 1d array
-        Bin edge definitions.
-    counts : 1d array
-        Count values per bin.
-    """
-
-    bin_edges = np.arange(0, 370, 10)
-    counts, _ = np.histogram(degrees, bins=bin_edges)
-
-    return bin_edges, counts
