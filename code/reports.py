@@ -3,8 +3,7 @@
 import numpy as np
 
 from spiketools.measures import compute_spike_rate
-
-from utils import convert_ms_to_minutes
+from spiketools.utils.timestamps import convert_ms_to_min
 
 ###################################################################################################
 ###################################################################################################
@@ -59,7 +58,7 @@ def create_subject_info(nwbfile):
     subject_info['session_id'] = nwbfile.session_id
     subject_info['trials_start'] = st
     subject_info['trials_end'] = en
-    subject_info['length'] = convert_ms_to_minutes(en)
+    subject_info['length'] = convert_ms_to_min(en)
 
     return subject_info
 
@@ -95,8 +94,8 @@ def create_behav_info(nwbfile):
     behav_info = {}
 
     behav_info['n_trials'] = len(nwbfile.trials)
-    behav_info['n_chests'] = sum(nwbfile.trials.num_chests.data[:])
-    behav_info['n_items'] = sum(nwbfile.trials.num_treasures.data[:])
+    behav_info['n_chests'] = sum(nwbfile.trials.n_chests.data[:])
+    behav_info['n_items'] = sum(nwbfile.trials.n_treasures.data[:])
     behav_info['error'] = np.mean(nwbfile.trials.error.data[:])
 
     return behav_info
