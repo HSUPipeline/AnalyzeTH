@@ -58,7 +58,7 @@ def create_subject_info(nwbfile):
     subject_info['session_id'] = nwbfile.session_id
     subject_info['trials_start'] = st
     subject_info['trials_end'] = en
-    subject_info['length'] = convert_ms_to_min(en)
+    subject_info['length'] = float(convert_ms_to_min(en))
 
     return subject_info
 
@@ -94,9 +94,9 @@ def create_behav_info(nwbfile):
     behav_info = {}
 
     behav_info['n_trials'] = len(nwbfile.trials)
-    behav_info['n_chests'] = sum(nwbfile.trials.n_chests.data[:])
-    behav_info['n_items'] = sum(nwbfile.trials.n_treasures.data[:])
-    behav_info['error'] = np.mean(nwbfile.trials.error.data[:])
+    behav_info['n_chests'] = int(sum(nwbfile.trials.n_chests.data[:]))
+    behav_info['n_items'] = int(sum(nwbfile.trials.n_treasures.data[:]))
+    behav_info['avg_error'] = np.mean(nwbfile.trials.error.data[:])
 
     return behav_info
 
@@ -108,7 +108,7 @@ def create_behav_str(behav_info):
         'Number of trials: {}'.format(str(behav_info['n_trials'])),
         'Number of chests: {}'.format(str(behav_info['n_chests'])),
         'Number of items: {}'.format(str(behav_info['n_items'])),
-        'Retrieval error : {:4.2f}'.format(behav_info['error']),
+        'Retrieval error : {:4.2f}'.format(behav_info['avg_error']),
     ])
 
     return string
@@ -120,9 +120,9 @@ def create_unit_info(unit):
     spikes = unit['spike_times'].values[0]
 
     unit_info = {}
-    unit_info['wvID'] = unit['wvID'].values[0]
+    unit_info['wvID'] = int(unit['wvID'].values[0])
     unit_info['n_spikes'] = len(spikes)
-    unit_info['spike_rate'] = compute_spike_rate(spikes / 1000)
+    unit_info['firing_rate'] = float(compute_spike_rate(spikes / 1000))
     unit_info['first_spike'] = spikes[0]
     unit_info['last_spike'] = spikes[-1]
     unit_info['location'] = unit['location'].values[0]
@@ -141,7 +141,7 @@ def create_unit_str(unit_info):
         'WVID:    {}'.format(unit_info['wvID']),
         'Keep:    {}'.format(unit_info['keep']),
         '# spikes:   {:5d}'.format(unit_info['n_spikes']),
-        'firing rate:  {:5.4f}'.format(unit_info['spike_rate']),
+        'firing rate:  {:5.4f}'.format(unit_info['firing_rate']),
         'Location:   {} ({})'.format(unit_info['location'],
                                    unit_info['channel']),
         'Cluster:   {}'.format(unit_info['cluster'])

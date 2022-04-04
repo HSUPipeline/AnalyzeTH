@@ -8,7 +8,7 @@ from matplotlib import gridspec
 
 from pynwb import NWBHDF5IO
 
-from convnwb.io import get_files
+from convnwb.io import get_files, save_json
 
 from spiketools.measures import compute_spike_rate
 from spiketools.spatial.occupancy import compute_occupancy
@@ -17,7 +17,7 @@ from spiketools.plts.data import plot_bar, plot_hist, plot_polar_hist
 from spiketools.plts.space import plot_heatmap
 from spiketools.plts.spikes import plot_unit_frs
 
-from settings import TASK, DATA_PATH, REPORTS_PATH, IGNORE, PLACE_BINS
+from settings import TASK, DATA_PATH, REPORTS_PATH, RESULTS_PATH, IGNORE, PLACE_BINS
 
 # Import local code
 import sys
@@ -51,11 +51,13 @@ def main():
         subj_id = nwbfile.subject.subject_id
         session_id = nwbfile.session_id
 
-        # Get data of interest from the NWB file
-
         # Get position & speed information
         pos = nwbfile.acquisition['position']['xy_position']
         speed = nwbfile.processing['position_measures']['speed'].data[:]
+
+        # Initialize output unit file name & output dictionary
+        name = session_id
+        results = {}
 
         ## ANALYZE SESSION DATA
 
@@ -87,7 +89,8 @@ def main():
         ax00 = plt.subplot(grid[0, 0])
 
         # Collect subject information
-        subject_text = create_subject_str(create_subject_info(nwbfile))
+        subject_info = create_subject_info(nwbfile)
+        subject_text = create_subject_str(subject_info)
         ax00.text(0.5, 0.5, subject_text, fontdict={'fontsize' : 14}, ha='center', va='center');
         ax00.axis('off');
 
@@ -120,7 +123,8 @@ def main():
 
         # 30: behaviour text
         ax20 = plt.subplot(grid[3, 0])
-        behav_text = create_behav_str(create_behav_info(nwbfile))
+        behav_info = create_behav_info(nwbfile)
+        behav_text = create_behav_str(behav_info)
         ax20.text(0.5, 0.5, behav_text, fontdict={'fontsize' : 14}, ha='center', va='center');
         ax20.axis('off');
 
@@ -136,6 +140,22 @@ def main():
         report_name = 'session_report_' + session_id + '.pdf'
         plt.savefig(REPORTS_PATH / 'sessions' / TASK / report_name)
 
+        ## COLLECT RESULTS
+        results['task'] = TASK
+        results['subj_id'] = subj_id
+        results['session_id'] = session_id
+        results['session_length'] = subject_info['length']
+        results['n_units'] = n_units
+        results['n_keep'] = n_keep
+        results['n_trials'] = behav_info['n_trials']
+        results['n_chests'] = behav_info['n_chests']
+        results['n_items'] = behav_info['n_items']
+        results['avg_error'] = behav_info['avg_error']
+
+        # Save out unit results
+        save_json(results, name + '.json', folder=str(RESULTS_PATH / 'sessions' / TASK))
+
+    print('\n\nCOMPLETED SESSION ANALYSES\n\n')
 
 if __name__ == '__main__':
     main()

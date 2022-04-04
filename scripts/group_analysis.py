@@ -91,6 +91,8 @@ def main():
         report_name = 'group_report_' + TASK + '.pdf'
         plt.savefig(REPORTS_PATH / 'group' / report_name)
 
+    print('\n\nCOMPLETED GROUP ANALYSES\n\n')
+
 
 if __name__ == '__main__':
     main()

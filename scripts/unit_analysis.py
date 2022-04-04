@@ -102,8 +102,9 @@ def main():
         # Loop across all units
         for unit_ind in keep_inds:
 
-            # Initialize output unit file name
+            # Initialize output unit file name & output dictionary
             name = session_id + '_U' + str(unit_ind).zfill(2)
+            results = {}
 
             # Check if unit already run
             if SKIP_ALREADY_RUN and name in output_files:
@@ -118,13 +119,6 @@ def main():
 
             # Extract spikes for a unit of interest
             spikes = nwbfile.units.get_unit_spike_times(unit_ind)
-
-            # Drop spikes until task time
-            st = nwbfile.trials['start_time'][0]
-            en = nwbfile.trials['stop_time'][-1]
-            spikes = restrict_range(spikes, st, en)
-
-            results = {}
 
             try:
 
@@ -256,8 +250,9 @@ def main():
 
                 # 01: unit information
                 ax01 = plt.subplot(grid[0, 1])
-                text = create_unit_str(create_unit_info(nwbfile.units[unit_ind]))
-                ax01.text(0.5, 0.7, text, fontdict={'fontsize' : 14}, ha='center', va='center');
+                unit_info = create_unit_info(nwbfile.units[unit_ind])
+                unit_text = create_unit_str(unit_info)
+                ax01.text(0.5, 0.7, unit_text, fontdict={'fontsize' : 14}, ha='center', va='center');
                 ax01.axis('off');
                 ax01.set_title("Unit Information", fontdict={'fontsize' : 16}, y=1.2)
 
@@ -346,20 +341,26 @@ def main():
 
                 ## COLLECT RESULTS
 
+                results['session'] = session_id
+                results['uid'] = int(unit_ind)
+                results['wvID'] = unit_info['wvID']
+                results['keep'] = unit_info['keep']
+                results['cluster'] = unit_info['cluster']
+                results['channel'] = unit_info['channel']
+                results['location'] = unit_info['location']
+                results['n_spikes'] = unit_info['n_spikes']
+                results['firing_rate'] = unit_info['firing_rate']
+
                 results['fr_t_val'] = fr_t_val
                 results['fr_p_val'] = fr_p_val
-
                 results['place_info'] = place_info
                 results['place_p_val'] = place_surr_p_val
                 results['place_z_score'] = place_z_score
-
                 results['target_info'] = target_info
                 results['target_p_val'] = target_surr_p_val
                 results['target_z_score'] = target_z_score
-
                 results['hd_z_val'] = hd_z_val
                 results['hd_p_val'] = hd_p_val
-
                 results['hd_surr_p'] = hd_surr_p_val
                 results['hd_surr_z'] = hd_z_score
 
@@ -367,9 +368,12 @@ def main():
                 save_json(results, name + '.json', folder=str(RESULTS_PATH / 'units' / TASK))
 
             except Exception as excp:
+                raise
                 print('\t\tissue running unit # {}'.format(unit_ind))
                 save_json({}, name + '.json', folder=str(RESULTS_PATH / 'units' / TASK / 'zFailed'))
                 continue
+
+    print('\n\nCOMPLETED UNIT ANALYSES\n\n')
 
 if __name__ == '__main__':
     main()
