@@ -17,7 +17,7 @@ from spiketools.plts.data import plot_bar, plot_hist, plot_polar_hist
 from spiketools.plts.space import plot_heatmap
 from spiketools.plts.spikes import plot_unit_frs
 
-from settings import TASK, DATA_PATH, REPORTS_PATH, RESULTS_PATH, IGNORE, PLACE_BINS
+from settings import TASK, PATHS, IGNORE, ANALYSIS_SETTINGS
 
 # Import local code
 import sys
@@ -45,7 +45,7 @@ def main():
         print('Running session analysis: ', nwbfile)
 
         # Get subject name & load NWB file
-        nwbfile = NWBHDF5IO(str(DATA_PATH / nwbfile), 'r').read()
+        nwbfile = NWBHDF5IO(str(PATHS['DATA'] / nwbfile), 'r').read()
 
         # Get the subject & session ID from file
         subj_id = nwbfile.subject.subject_id
@@ -77,7 +77,9 @@ def main():
             for uind in keep_inds]
 
         # Compute occupancy
-        occ = compute_occupancy(pos.data[:], pos.timestamps[:], PLACE_BINS, speed, set_nan=True)
+        occ = compute_occupancy(pos.data[:], pos.timestamps[:],
+                                ANALYSIS_SETTINGS['PLACE_BINS'],
+                                speed, set_nan=True)
 
         ## CREATE REPORT
         # Initialize figure
@@ -101,7 +103,7 @@ def main():
 
         # 10: position text
         ax10 = plt.subplot(grid[1, 0])
-        position_text = create_position_str(PLACE_BINS, occ)
+        position_text = create_position_str(ANALYSIS_SETTINGS['PLACE_BINS'], occ)
         ax10.text(0.5, 0.5, position_text, fontdict={'fontsize' : 14}, ha='center', va='center');
         ax10.axis('off');
 
@@ -138,7 +140,7 @@ def main():
 
         # Save out report
         report_name = 'session_report_' + session_id + '.pdf'
-        plt.savefig(REPORTS_PATH / 'sessions' / TASK / report_name)
+        plt.savefig(PATHS['REPORTS'] / 'sessions' / TASK / report_name)
 
         ## COLLECT RESULTS
         results['task'] = TASK
@@ -153,7 +155,7 @@ def main():
         results['avg_error'] = behav_info['avg_error']
 
         # Save out unit results
-        save_json(results, name + '.json', folder=str(RESULTS_PATH / 'sessions' / TASK))
+        save_json(results, name + '.json', folder=str(PATHS['RESULTS'] / 'sessions' / TASK))
 
     print('\n\nCOMPLETED SESSION ANALYSES\n\n')
 

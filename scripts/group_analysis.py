@@ -1,7 +1,5 @@
 """Run & collect TH analyses at the group level."""
 
-from pathlib import Path
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
@@ -12,7 +10,7 @@ from convnwb.io import get_files
 
 from spiketools.plts.data import plot_hist
 
-from settings import TASK, DATA_PATH, REPORTS_PATH
+from settings import TASK, PATHS, IGNORE
 
 import sys
 sys.path.append('../code')
@@ -27,7 +25,7 @@ def main():
     print('\n\nANALYZING GROUP DATA - {} \n\n'.format(TASK))
 
     # Get the list of NWB files
-    nwbfiles = get_files(DATA_PATH, select=TASK)
+    nwbfiles = get_files(PATHS['DATA'], select=TASK)
 
     # Define summary data to collect
     summary = {
@@ -41,8 +39,13 @@ def main():
 
     for nwbfile in nwbfiles:
 
+        # Check and ignore files set to ignore
+        if nwbfile.split('.')[0] in IGNORE:
+            print('Ignoring file: ', nwbfile)
+            continue
+
         # Load NWB file
-        io = NWBHDF5IO(str(DATA_PATH / nwbfile), 'r')
+        io = NWBHDF5IO(str(PATHS['DATA'] / nwbfile), 'r')
         nwbfile = io.read()
 
         # Get the subject & session ID from file
@@ -89,7 +92,7 @@ def main():
 
         # Save out report
         report_name = 'group_report_' + TASK + '.pdf'
-        plt.savefig(REPORTS_PATH / 'group' / report_name)
+        plt.savefig(PATHS['REPORTS'] / 'group' / report_name)
 
     print('\n\nCOMPLETED GROUP ANALYSES\n\n')
 
