@@ -24,10 +24,10 @@ from reports import create_group_info, create_group_str, create_group_sessions_s
 def main():
     """Run group level summary analyses."""
 
-    print('\n\nANALYZING {} GROUP DATA\n\n'.format(TASK))
+    print('\n\nANALYZING GROUP DATA - {} \n\n'.format(TASK))
 
     # Get the list of NWB files
-    nwbfiles = get_files(DATA_PATH, select='nwb')
+    nwbfiles = get_files(DATA_PATH, select=TASK)
 
     # Define summary data to collect
     summary = {

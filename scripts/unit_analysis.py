@@ -18,7 +18,7 @@ from spiketools.stats.shuffle import shuffle_spikes
 from spiketools.plts.spikes import plot_waveform, plot_isis
 from spiketools.plts.space import plot_positions, plot_heatmap
 from spiketools.plts.trials import plot_rasters
-from spiketools.plts.data import plot_bar
+from spiketools.plts.data import plot_bar, plot_polar_hist
 from spiketools.plts.stats import plot_surrogates
 from spiketools.utils import restrict_range
 
@@ -37,7 +37,6 @@ import sys
 sys.path.append('../code')
 from utils import select_from_list
 from analysis import calc_trial_frs, get_spike_positions, compute_bin_firing, get_spike_heading
-from plts import plot_polar_hist
 from target import compute_serial_position_fr, compute_spatial_target_bins
 from reports import *
 
@@ -47,10 +46,10 @@ from reports import *
 def main():
     """Run unit analyses."""
 
-    print('\n\nANALYZING {} UNIT DATA\n\n'.format(TASK))
+    print('\n\nANALYZING UNIT DATA - {}\n\n'.format(TASK))
 
     # Get the list of NWB files
-    nwbfiles = get_files(DATA_PATH, select='nwb')
+    nwbfiles = get_files(DATA_PATH, select=TASK)
 
     # Get list of already generated and failed units, & drop file names
     output_files = get_files(RESULTS_PATH / 'units' / TASK,
@@ -86,19 +85,22 @@ def main():
         # Extract head position data
         hd_times = nwbfile.acquisition['position']['head_direction'].timestamps[:]
         hd_degrees = nwbfile.acquisition['position']['head_direction'].data[:]
-        # Fix for degree range - TODO fix upstream in conversion
-        hd_degrees = hd_degrees + -np.min(hd_degrees[hd_degrees < 0])
 
         # Get the chest positions & trial indices
         chest_xs, chest_ys = nwbfile.acquisition['chest_positions']['chest_positions'].data[:]
         chest_trials = nwbfile.acquisition['chest_trials']['chest_trials'].data[:]
-        chest_openings = nwbfile.trials.to_dataframe()['chest_opening'].values
+        chest_openings = nwbfile.trials.to_dataframe()['chest_opening_time'].values
         trial_starts = nwbfile.trials['start_time'].data[:]
 
         ## ANALYZE UNITS
 
+        # Get unit information
+        n_units = len(nwbfile.units)
+        keep_inds = np.where(nwbfile.units.keep[:])[0]
+        n_keep = len(keep_inds)
+
         # Loop across all units
-        for unit_ind in range(len(nwbfile.units)):
+        for unit_ind in keep_inds:
 
             # Initialize output unit file name
             name = session_id + '_U' + str(unit_ind).zfill(2)
@@ -133,7 +135,7 @@ def main():
 
                 # Compute firing related to chest presentation
                 all_chests = []
-                for opening in nwbfile.trials.chest_opening[:]:
+                for opening in nwbfile.trials.chest_opening_time[:]:
                     time_range = restrict_range(spikes, opening + TRIAL_RANGE[0], opening + TRIAL_RANGE[1])
                     all_chests.append(time_range - opening)
                 fr_pre, fr_post = calc_trial_frs(all_chests)
@@ -363,7 +365,6 @@ def main():
 
                 # Save out unit results
                 save_json(results, name + '.json', folder=str(RESULTS_PATH / 'units' / TASK))
-
 
             except Exception as excp:
                 print('\t\tissue running unit # {}'.format(unit_ind))

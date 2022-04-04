@@ -8,11 +8,11 @@ from pathlib import Path
 ## PATHS
 
 # Set which task to process
-TASK = 'THO'
+TASK = 'THF'
 
 # Set the data path to load from
 BASE_PATH = Path('/Users/tom/Documents/Data/JacobsLab/TH/')
-DATA_PATH = BASE_PATH / TASK / 'NWB'
+DATA_PATH = BASE_PATH / 'NWB'
 
 # Set the path to save out reports & results
 REPORTS_PATH = Path('../reports/')
