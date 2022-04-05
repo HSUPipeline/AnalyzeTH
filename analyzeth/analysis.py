@@ -64,6 +64,7 @@ def get_spike_heading(spike_times, hd_times, hd_degrees):
     spike_hds = []
 
     for spike_time in spike_times:
+        
         hd_idx = np.abs(hd_times[hd_times <= spike_time] - spike_time).argmin() 
         spike_hds.append(hd_degrees[hd_idx])
 
