@@ -21,3 +21,7 @@ def plot_polar_hist(degrees, ax=None):
 
     bin_edges, counts = bin_circular(degrees)
     bars = ax.bar(bin_edges[:-1], counts)
+
+    return ax
+
+

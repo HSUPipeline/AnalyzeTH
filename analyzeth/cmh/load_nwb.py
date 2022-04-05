@@ -1,7 +1,7 @@
 # Imports
 from pynwb import NWBHDF5IO
 import glob
-import thefuzz      # Levenshtein distancce fuzzy string matching
+from thefuzz import process      # Levenshtein distancce fuzzy string matching
 
 # Settings
 from analyzeth.timeCells import settings_TC as SETTINGS 
@@ -78,12 +78,12 @@ def load_nwb(task = None,
 
     # Define expected NWB file name & full path
     file_name = '_'.join([task, subject, 'session_' + str(session)]) + '.nwb'
-    full_path = data_folder + file_name
+    file_path = data_folder + file_name
 
     # Try to load file
     try:
         # Load NWB file
-        io = NWBHDF5IO(str(full_path), 'r')
+        io = NWBHDF5IO(str(file_path), 'r')
         nwbfile = io.read()
 
     except:
@@ -96,7 +96,8 @@ def load_nwb(task = None,
         print(files, '\n')
 
         # Find closest match
-        closest_file = thefuzz.process.extractOne(file_name, files)
+        #closest_file = thefuzz.process.extractOne(file_name, files)
+        closest_file = process.extractOne(file_name, files)
         print('This file was found to have the closest match:')
         print (closest_file[0])
         print('Match Score = {} \n'.format(closest_file[1]))
@@ -111,11 +112,14 @@ def load_nwb(task = None,
         
         if UI == 'y':
             print ('Great, loading the file...')
-            io = NWBHDF5IO(closest_file[0], 'r')
+            file_path = closest_file[0]
+            io = NWBHDF5IO(file_path, 'r')
             nwbfile = io.read()
 
         elif UI == 'n':
             print ('Oh no! Please try again')
             return
+    
+    print('Loaded File: \t\t {}'.format(file_path))
     
     return nwbfile
