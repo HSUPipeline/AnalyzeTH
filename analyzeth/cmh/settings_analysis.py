@@ -21,6 +21,10 @@ TRIAL_IX = 5
 # Select data folder
 DATA_FOLDER = '/home1/cameron.holman/data/wvu/'
 
+# -- SHUFFLE GENERAL --
+SHUFFLE_APPROACH = 'BINCIRC'
+N_SURROGATES = 100
+
 
 # -- TIME CELL ANALYSIS -- 
 # Choose TimeBin length 

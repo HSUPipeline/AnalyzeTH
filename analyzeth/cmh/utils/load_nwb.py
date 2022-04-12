@@ -4,7 +4,7 @@ import glob
 from thefuzz import process      # Levenshtein distancce fuzzy string matching
 
 # Settings
-from analyzeth.timeCells import settings_TC as SETTINGS 
+from analyzeth.cmh import settings_analysis as SETTINGS 
 
 
 def load_nwb(task = None,
@@ -67,7 +67,7 @@ def load_nwb(task = None,
         task = SETTINGS.TASK
         print ('Task not set \t\t | Task from SETTINGS: \t\t {}'.format(task))
     if subject == None:
-        subject = SETTINGS.SUBJ
+        subject = SETTINGS.SUBJECT
         print('Subject not set \t | Subject from SETTINGS: \t {}'.format(subject))
     if session == None:
         session = SETTINGS.SESSION

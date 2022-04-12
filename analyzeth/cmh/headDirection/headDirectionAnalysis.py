@@ -33,7 +33,7 @@ import analyzeth.cmh.settings_analysis as SETTINGS
 def head_direction_cell_session(
     nwbfile = None,
     task = SETTINGS.TASK,
-    subj = SETTINGS.SUBJECT,
+    subject = SETTINGS.SUBJECT,
     session = SETTINGS.SESSION,
     unit_ix = SETTINGS.UNIT_IX,
     trial_ix = SETTINGS.TRIAL_IX,
@@ -80,12 +80,12 @@ def head_direction_cell_session(
 
     # load file if not given
     if nwbfile == None:
-        nwbfile = load_nwb(task, subj, session, data_folder) 
+        nwbfile = load_nwb(task, subject, session, data_folder) 
 
     if VERBOSE:
         print('\n -- SUBJECT DATA --')
         print(experiment_label)
-        print('Subject {}'.format(subj))
+        print('Subject {}'.format(subject))
 
     # -- SESSION DATA -- 
     # Get the number of trials & units
@@ -118,7 +118,6 @@ def head_direction_cell_session(
     n_spikes_ses = len(spikes)
 
     # Get spikes during navigation period 
-    #   - note: this is listed as 'encoding period' in nwb
     navigation_start_times = nwbfile.trials['navigation_start'][:]
     navigation_end_times = nwbfile.trials['navigation_end'][:]
     
@@ -353,7 +352,7 @@ def plot_hd_raster(
     
     # -- LOAD -- 
     if nwbfile == None:
-        nwbfile = load_nwb(task, subj, session, data_folder) 
+        nwbfile = load_nwb(task, subject, session, data_folder) 
 
     # -- SESSION DATA -- 
     session_start = nwbfile.trials['start_time'][0]
@@ -407,3 +406,89 @@ def plot_hd_raster(
 
     return fig, ax
 
+def plot_line_hd_navigation(nwbfile):
+    
+    # Navigation period data
+    navigation_start_times = nwbfile.trials['navigation_start'][:]/1e3
+    navigation_end_times = nwbfile.trials['navigation_end'][:]/1e3
+
+    # Head direction data
+    head_direction = nwbfile.acquisition['position']['head_direction']
+    hd_times = head_direction.timestamps[:] / 1e3    
+    hd_degrees = head_direction.data[:]
+    
+    # Get nav data
+    hd_times_nav = subset_period_event_time_data(hd_times, navigation_start_times, navigation_end_times)
+    hd_degrees_nav = subset_period_data(hd_degrees, hd_times, navigation_start_times, navigation_end_times)
+
+    # Plot
+    fig, ax = plt.subplots(figsize = [14, 5])
+    ax.plot(hd_degrees_nav)
+
+    return fig, ax
+
+def plot_line_hd(nwbfile, unit_ix = None):
+    
+    # Navigation period data
+    navigation_start_times = nwbfile.trials['navigation_start'][:]/1e3
+    navigation_end_times = nwbfile.trials['navigation_end'][:]/1e3
+
+    # Head direction data
+    head_direction = nwbfile.acquisition['position']['head_direction']
+    hd_times = head_direction.timestamps[:] / 1e3    
+    hd_degrees = head_direction.data[:]
+
+    # -- PLOT --
+    fig, ax = plt.subplots(figsize = [25, 5])
+
+    # plot navigation periods
+    colors = ['r','y','b'] * 10
+    for ix in range(len(navigation_start_times)):
+            ax.axvspan(navigation_start_times[ix], navigation_end_times[ix], alpha=0.2, facecolor=colors[ix])
+
+    # plot hd
+    ax.plot(hd_times, hd_degrees, marker ='o', markerfacecolor='g', markeredgecolor='g')
+    #ax.scatter(hd_times, hd_degrees)
+
+    if unit_ix != None:
+        spikes = nwbfile.units.get_unit_spike_times(unit_ix) / 1e3
+        ax.plot(spikes, len(spikes) * [365], 'rv')
+
+    return fig, ax
+
+def subset_period_event_time_data(event_times, period_start_times, period_end_times):
+    """ Given 1D array of event times, subset only those times in periods of interest
+
+    ex. all spikes within trial periods, all position times in navigation period
+    """
+    PETD = np.array([])
+    for ix in range(len(period_start_times)):
+        PETD = np.append(
+                    PETD,
+                    event_times[(event_times > period_start_times[ix]) \
+                                & (event_times < period_end_times[ix])],   
+                                axis = 0)
+    return PETD
+
+def subset_period_data(data, event_times, period_start_times, period_end_times):
+    """ 
+    Given 1D or 2D array of data (ex 1D head direction degrees, 2D position times) 
+    and 1D array of matched event_times (ex times at which HD is recorded) with 
+    matching indicies/length:
+
+    Pull out data that falls in periods of interes (ex navigation periods)
+    """
+    period_ixs = np.array([], dtype=int)
+    for ix in range(len(period_start_times)):
+        period_ixs_ix = np.where((period_start_times[ix] < event_times) \
+                                        & (event_times < period_end_times[ix]))
+        period_ixs = np.append(period_ixs, period_ixs_ix[0])
+    
+    if data.ndim == 1:
+        period_data = data[period_ixs]
+    elif data.ndim == 2:
+        period_data = data[:, period_ixs]
+    else:
+        raise ValueError('data must be 1D or 2D')
+    
+    return period_data
