@@ -14,7 +14,7 @@ from spiketools.utils import restrict_range
 from spiketools.plts.trials import plot_rasters
 
 # Local
-from analyzeth.cmh.load_nwb import load_nwb
+from analyzeth.cmh.utils.load_nwb import load_nwb
 from analyzeth.analysis import get_spike_heading, bin_circular
 from analyzeth.plts import plot_polar_hist
 
