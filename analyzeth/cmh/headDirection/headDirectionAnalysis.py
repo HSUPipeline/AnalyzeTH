@@ -15,6 +15,8 @@ from spiketools.plts.trials import plot_rasters
 
 # Local
 from analyzeth.cmh.utils.load_nwb import load_nwb
+from analyzeth.cmh.utils.nwb_info import nwb_info
+from analyzeth.cmh.utils.subset_data import subset_period_event_time_data, subset_period_data
 from analyzeth.analysis import get_spike_heading, bin_circular
 from analyzeth.plts import plot_polar_hist
 
@@ -83,9 +85,7 @@ def head_direction_cell_session(
         nwbfile = load_nwb(task, subject, session, data_folder) 
 
     if VERBOSE:
-        print('\n -- SUBJECT DATA --')
-        print(experiment_label)
-        print('Subject {}'.format(subject))
+        nwb_info(nwbfile, unit_ix = unit_ix, trial_ix = trial_ix)
 
     # -- SESSION DATA -- 
     # Get the number of trials & units
@@ -96,17 +96,6 @@ def head_direction_cell_session(
     session_start = nwbfile.trials['start_time'][0]
     session_end = nwbfile.trials['stop_time'][-1]
     session_len = session_end - session_start
-    
-    if VERBOSE:
-        print('\n -- SESSION DATA --')
-        print('Chosen Session: \t\t\t {}'.format(session))
-        print('Session Start Time: \t\t\t {}'.format(session_start))
-        print('Session End Time: \t\t\t {}'.format(session_end))
-        print('Total Session Length (ms): \t\t {}'.format(np.round(session_len,2))) 
-        print('Total Session Length (sec): \t\t {}'.format(np.round((session_len)/1000,2))) 
-        print('Total Session Length (min): \t\t {}'.format(np.round((session_len)/60000,2))) 
-        print('Number of trials: \t\t\t {}'.format(n_trials))
-        print('Number of units: \t\t\t {}'.format(n_units))
 
     # -- SPIKE DATA --
     # Get all spikes from unit across session 
@@ -120,46 +109,13 @@ def head_direction_cell_session(
     # Get spikes during navigation period 
     navigation_start_times = nwbfile.trials['navigation_start'][:]
     navigation_end_times = nwbfile.trials['navigation_end'][:]
-    
-    if len(navigation_start_times) != len(navigation_end_times):
-        # I actually think I caught this in the parser but JIC
-        msg = 'Different lengths of Navigation Start and End Times. The subject likely \
-               stopped in the middle of a trial. Remove the last trial and try again'
-        raise ValueError(msg)
-
-    spikes_navigation = np.array([])
-    for ix in range(len(navigation_start_times)):
-        spikes_navigation = np.append(
-                            spikes_navigation,
-                            spikes[(spikes > navigation_start_times[ix]) \
-                                 & (spikes < navigation_end_times[ix])],   # <= ?
-                            axis = 0)
+    spikes_navigation = subset_period_event_time_data(spikes, navigation_start_times, navigation_end_times)
     n_spikes_navigation = len(spikes_navigation)
-
-    if VERBOSE:
-        print('\n -- UNIT DATA --')
-        print('Chosen example unit: \t\t\t {}'.format(unit_ix))
-        print('Total number of spikes: \t\t {}'.format(n_spikes_tot))
-        print('Number of spikes within session: \t {}'.format(n_spikes_ses))  
-        print('Number of spikes within navigation: \t {}'.format(n_spikes_navigation))  
 
     # -- HEAD DIRECTION DATA --
     head_direction = nwbfile.acquisition['position']['head_direction']
     hd_times = head_direction.timestamps[:]
     hd_degrees = head_direction.data[:]
-    # hd_degrees = hd_degrees + -np.min(hd_degrees[hd_degrees<0]) 
-        # The shift here is because there is a shift somehwere causing 
-        # hd_degree vaulues to range from ex. [-0.5, 369.5].
-        # By shifting all values up by the -minimum (the offset), the degree 
-        # values maintain consistent relationship and fall in the correct 
-        # range [0, 360].
-
-    if VERBOSE:
-        print('\n -- HEAD DIRECTION DATA --')
-        print('Session | length of HD timestamps: \t {}'. format(len(hd_times)))
-        print('Session | length of HD degree array \t {}'.format(len(hd_degrees)))
-        print('Head direction degree range: \t\t [{}, {}]'.format(min(hd_degrees), max(hd_degrees)))
-
 
     # -------------------------------------------------------------------------------
     # -- PLOT RASTER --
@@ -202,12 +158,6 @@ def head_direction_cell_session(
         print('Circular Rayleigh:')
         print('\t z value: \t {}'.format(spike_hd_z_val))
         print('\t p value: \t {}'.format(spike_hd_p_val))
-                #print('{:1.2f}% of cells ({} / {})'.format(len(spike_hds) / len(spikes) * 100, len(spike_hds), len(spikes)))
-                # @cmh this is not showing the right thing, seems to be showing the number of 
-                # spikes that have an associated HD of all the spikes. 
-                # 
-                # Wwe need to find the interval at which HD is determined and find all spikes
-                # within each interval that are associated with that time interval of HD...
 
     spike_hd_fig = None
     if PLOT:
@@ -223,6 +173,9 @@ def head_direction_cell_session(
     shuffled_spike_bin_counts = []
     shuffled_z_vals = []
     shuffled_p_vals = []
+    surrogates_hd_fig = None
+    overlay_surrogates_fig = None 
+    emperical_p_val = None
     
     if SHUFFLE:
         shuffled_spike_times =  shuffle_spikes(
@@ -255,19 +208,8 @@ def head_direction_cell_session(
 
         # Mean shuffled
         mean_shuffled_hd_counts =  np.mean(shuffled_spike_bin_counts, axis = 0)
-        surrogates_hd_fig = None
-        overlay_surrogates_fig = None 
         if PLOT:
             # Surrogates alone
-
-            print('---------')
-            print(len(mean_shuffled_hd_counts))
-            print(len(shuffled_spike_bin_counts), len(shuffled_spike_bin_counts[0]))
-            print(len(shuffled_spike_hds), len(shuffled_spike_hds[0]))
-
-            print('---------')
-            
-            
             surrogates_hd_fig = plt.figure()
             ax = plt.subplot(111, polar=True)
             ax.bar(bin_edges[:-1], mean_shuffled_hd_counts)
@@ -277,9 +219,6 @@ def head_direction_cell_session(
             # Surrogates over original
             overlay_surrogates_fig = plt.figure() 
             ax = plot_polar_hist(spike_hds)
-
-            print(len(mean_shuffled_hd_counts))
-            
             ax.bar(bin_edges[:-1], mean_shuffled_hd_counts)
             
             plt.title('Overlay')
@@ -455,40 +394,3 @@ def plot_line_hd(nwbfile, unit_ix = None):
         ax.plot(spikes, len(spikes) * [365], 'rv')
 
     return fig, ax
-
-def subset_period_event_time_data(event_times, period_start_times, period_end_times):
-    """ Given 1D array of event times, subset only those times in periods of interest
-
-    ex. all spikes within trial periods, all position times in navigation period
-    """
-    PETD = np.array([])
-    for ix in range(len(period_start_times)):
-        PETD = np.append(
-                    PETD,
-                    event_times[(event_times > period_start_times[ix]) \
-                                & (event_times < period_end_times[ix])],   
-                                axis = 0)
-    return PETD
-
-def subset_period_data(data, event_times, period_start_times, period_end_times):
-    """ 
-    Given 1D or 2D array of data (ex 1D head direction degrees, 2D position times) 
-    and 1D array of matched event_times (ex times at which HD is recorded) with 
-    matching indicies/length:
-
-    Pull out data that falls in periods of interes (ex navigation periods)
-    """
-    period_ixs = np.array([], dtype=int)
-    for ix in range(len(period_start_times)):
-        period_ixs_ix = np.where((period_start_times[ix] < event_times) \
-                                        & (event_times < period_end_times[ix]))
-        period_ixs = np.append(period_ixs, period_ixs_ix[0])
-    
-    if data.ndim == 1:
-        period_data = data[period_ixs]
-    elif data.ndim == 2:
-        period_data = data[:, period_ixs]
-    else:
-        raise ValueError('data must be 1D or 2D')
-    
-    return period_data
