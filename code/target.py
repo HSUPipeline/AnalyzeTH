@@ -11,13 +11,13 @@ from analysis import get_spike_positions
 ###################################################################################################
 ###################################################################################################
 
-def compute_serial_position_fr(spikes, trial_starts, chest_openings, chest_trials, ptimes, positions):
+def compute_serial_position_fr(spikes, nav_starts, chest_openings, chest_trials, ptimes, positions):
     """Collect firing rates per segment across all trials"""
 
-    all_frs = np.zeros([len(trial_starts), 4])
-    for t_ind in range(len(trial_starts)):
+    all_frs = np.zeros([len(nav_starts), 4])
+    for t_ind in range(len(nav_starts)):
 
-        t_st = trial_starts[t_ind]
+        t_st = nav_starts[t_ind]
         ch_openings = chest_openings[t_ind]
         t_en = ch_openings[-1]
 
@@ -39,15 +39,15 @@ def compute_serial_position_fr(spikes, trial_starts, chest_openings, chest_trial
     return all_frs
 
 
-def compute_spatial_target_bins(spikes, trial_starts, chest_openings, chest_trials,
+def compute_spatial_target_bins(spikes, nav_starts, chest_openings, chest_trials,
                                 ptimes, positions, chest_bins, ch_xbin, ch_ybin):
     """Compute the binned firing rate based on spatial target."""
 
     # Collect firing per chest location across all trials
     target_bins = np.zeros(chest_bins)
-    for t_ind in range(len(trial_starts)):
+    for t_ind in range(len(nav_starts)):
 
-        t_st = trial_starts[t_ind]
+        t_st = nav_starts[t_ind]
         ch_openings = chest_openings[t_ind]
         t_en = ch_openings[-1]
 

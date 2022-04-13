@@ -3,7 +3,7 @@
 import numpy as np
 
 from spiketools.measures import compute_spike_rate
-from spiketools.utils.timestamps import convert_ms_to_min
+from spiketools.utils.timestamps import convert_sec_to_min
 
 ###################################################################################################
 ###################################################################################################
@@ -58,7 +58,7 @@ def create_subject_info(nwbfile):
     subject_info['session_id'] = nwbfile.session_id
     subject_info['trials_start'] = st
     subject_info['trials_end'] = en
-    subject_info['length'] = float(convert_ms_to_min(en))
+    subject_info['length'] = float(convert_sec_to_min(en))
 
     return subject_info
 
@@ -122,7 +122,7 @@ def create_unit_info(unit):
     unit_info = {}
     unit_info['wvID'] = int(unit['wvID'].values[0])
     unit_info['n_spikes'] = len(spikes)
-    unit_info['firing_rate'] = float(compute_spike_rate(spikes / 1000))
+    unit_info['firing_rate'] = float(compute_spike_rate(spikes))
     unit_info['first_spike'] = spikes[0]
     unit_info['last_spike'] = spikes[-1]
     unit_info['location'] = unit['location'].values[0]
