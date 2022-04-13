@@ -35,7 +35,7 @@ IGNORE = []
 # Set whether to skip units that have already been processed
 SKIP_ALREADY_RUN = True
 SKIP_FAILED = True
-CONTINUE_ON_FAIL = True
+CONTINUE_ON_FAIL = False
 
 UNIT_SETTINGS = {
     'SKIP_ALREADY_RUN' : SKIP_ALREADY_RUN,
@@ -46,16 +46,22 @@ UNIT_SETTINGS = {
 ## ANALYSIS SETTINGS
 
 # Set the time range to analyze
-TRIAL_RANGE = [-1000, 1000]
+TRIAL_RANGE = [-1, 1]
 
-# Set the spatial bin definition
-PLACE_BINS = [7, 21]
+# Set the spatial bin definitions
+#PLACE_BINS = [7, 21]
+PLACE_BINS = [9, 12]
 CHEST_BINS = [5, 7]
 
+# Occupancy settings
+MIN_OCCUPANCY = 1
+
+# Collect together all analysis settings
 ANALYSIS_SETTINGS = {
     'TRIAL_RANGE' : TRIAL_RANGE,
     'PLACE_BINS' : PLACE_BINS,
     'CHEST_BINS' : CHEST_BINS,
+    'MIN_OCCUPANCY' : MIN_OCCUPANCY
 }
 
 ## SURROGATE SETTINGS
