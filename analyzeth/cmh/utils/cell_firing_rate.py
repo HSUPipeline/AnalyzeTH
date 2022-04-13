@@ -20,10 +20,10 @@ def cell_firing_rate(
         time stamps of spikes in ms
 
     window: int 
-        legth of window over which to calculate FR
+        legth of window over which to calculate FR in ms
 
     step: int
-        step size for moving window
+        step size for moving window in ms
 
     Returns
     -------
