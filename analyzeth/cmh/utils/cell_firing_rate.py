@@ -28,6 +28,7 @@ def cell_firing_rate(
     Returns
     -------
     firing_rates: 1D array
+        Hz (spikes per second)
         firing rates at each point in time
         length of array depends on step size
 
@@ -54,7 +55,7 @@ def cell_firing_rate(
         left = center - window/2
         right = center + window/2
         spikes_bin = spikes[(left<spikes) & (spikes < right)]
-        fr_bin = len(spikes_bin)/window
+        fr_bin = len(spikes_bin)/(window/1e3) # get FR in Hz 
         times.append(center)
         FRs.append(fr_bin)
 
