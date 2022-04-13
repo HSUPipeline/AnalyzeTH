@@ -150,11 +150,6 @@ def plot_navigation_positions_TH(
                                 & (position_times < navigation_end_times[ix]))
         navigation_positions = positions[:, navigation_ixs[0]] #np.where returns tuple even for 1d
 
-        
-        #print(navigation_ixs.shape)
-        # print(navigation_ixs)
-        # print(positions.shape)
-        # print(navigation_positions.shape)
         plot_positions(navigation_positions, 
                     spike_positions, 
                     x_bins=x_bin_edges, 
@@ -230,11 +225,6 @@ def plot_navigation_positions_TH_OLD(
     spike_xs, spike_ys = get_spike_positions(spikes_navigation, position_times, positions)
     spike_positions = np.array([spike_xs, spike_ys])
     
-    # print(spikes_navigation)
-    # print(spike_xs)
-    # print(spike_ys)
-    # print(spike_positions)
-
     # Get positions during navigation period
     navigation_ixs = np.array([], dtype=int)
     for ix in range(len(navigation_start_times)):
@@ -244,8 +234,7 @@ def plot_navigation_positions_TH_OLD(
     positions_navigation = positions[:, navigation_ixs]
 
     print('Num navigation positions: \t {}'.format(len(navigation_ixs)))
-    #print(positions_navigation)
-    
+
     # -- PLOT --
     fig, ax = plt.subplots(figsize = [5,7])
     plot_positions(positions_navigation, spike_positions, x_bins=x_bin_edges, y_bins = y_bin_edges, ax = ax)
