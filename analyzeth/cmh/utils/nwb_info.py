@@ -10,8 +10,10 @@ def nwb_info(
     task = SETTINGS.TASK,
     subject = SETTINGS.SUBJECT,
     session = SETTINGS.SESSION,
-    unit_ix = SETTINGS.UNIT_IX,
-    trial_ix = SETTINGS.TRIAL_IX,
+    unit_ix = None,
+    trial_ix = None,
+    head_direction_data = False,
+    time_cell_data = False,
     experiment_label = SETTINGS.ACQUISITION_LOCATION
     ):
 
@@ -53,66 +55,69 @@ def nwb_info(
 
 
     # -- TRIAL DATA --
-    # Extract behavioural markers of interest
-    trial_starts = nwbfile.trials['start_time'].data[:]
-    chest_openings = nwbfile.trials.chest_opening_time_index[:]
+    if trial_ix:
+        # Extract behavioural markers of interest
+        trial_starts = nwbfile.trials['start_time'].data[:]
+        chest_openings = nwbfile.trials.chest_opening_time_index[:]
 
-    # Trial start and end times
-    trial_ix_start = trial_starts[trial_ix]
-    trial_ix_end = chest_openings[trial_ix][-1]  # @cmh may want to modify this will see 
-    trial_ix_len = trial_ix_end - trial_ix_start
-    
-    print('\n -- TRIAL DATA --')
-    print('Chosen Trial: \t\t\t\t {}'.format(trial_ix))
-    print('Trial Start Time: \t\t\t {}'.format(trial_ix_start))
-    print('Trial End Time: \t\t\t {}'.format(trial_ix_end))
-    print('Total Trial Length (ms): \t\t {}'.format(np.round(trial_ix_len,2))) 
-    print('Total Trial Length (sec): \t\t {}'.format(np.round((trial_ix_len)/1000,2))) 
-    print('Total Trial Length (min): \t\t {}'.format(np.round((trial_ix_len)/60000,2))) 
+        # Trial start and end times
+        trial_ix_start = trial_starts[trial_ix]
+        trial_ix_end = chest_openings[trial_ix][-1]  # @cmh may want to modify this will see 
+        trial_ix_len = trial_ix_end - trial_ix_start
+        
+        print('\n -- TRIAL DATA --')
+        print('Chosen Trial: \t\t\t\t {}'.format(trial_ix))
+        print('Trial Start Time: \t\t\t {}'.format(trial_ix_start))
+        print('Trial End Time: \t\t\t {}'.format(trial_ix_end))
+        print('Total Trial Length (ms): \t\t {}'.format(np.round(trial_ix_len,2))) 
+        print('Total Trial Length (sec): \t\t {}'.format(np.round((trial_ix_len)/1000,2))) 
+        print('Total Trial Length (min): \t\t {}'.format(np.round((trial_ix_len)/60000,2))) 
 
 
     # -- SPIKE DATA --
-    # Get all spikes from unit across session 
-    spikes = nwbfile.units.get_unit_spike_times(unit_ix)
-    n_spikes_tot = len(spikes)
+    if unit_ix:
+        # Get all spikes from unit across session 
+        spikes = nwbfile.units.get_unit_spike_times(unit_ix)
+        n_spikes_tot = len(spikes)
 
-    # Drop spikes oustside session time
-    spikes = restrict_range(spikes, session_start, session_end)
-    n_spikes_ses = len(spikes)
+        # Drop spikes oustside session time
+        spikes = restrict_range(spikes, session_start, session_end)
+        n_spikes_ses = len(spikes)
 
-    # Get spikes in trial_ix
-    spikes_tix = restrict_range(spikes, trial_ix_start, trial_ix_end)
-    n_spikes_tix = len(spikes_tix)
+        # Get spikes in trial_ix
+        spikes_tix = restrict_range(spikes, trial_ix_start, trial_ix_end)
+        n_spikes_tix = len(spikes_tix)
 
-    # Get spikes during navigation periods
-    navigation_start_times = nwbfile.trials['navigation_start'][:]
-    navigation_end_times = nwbfile.trials['navigation_end'][:]
-    
-    if len(navigation_start_times) != len(navigation_end_times):
-        # I actually think I caught this in the parser but JIC
-        msg = 'Different lengths of Navigation Start and End Times. The subject likely \
-               stopped in the middle of a trial. Remove the last trial and try again'
-        raise ValueError(msg)
+        # Get spikes during navigation periods
+        navigation_start_times = nwbfile.trials['navigation_start'][:]
+        navigation_end_times = nwbfile.trials['navigation_end'][:]
+        
+        if len(navigation_start_times) != len(navigation_end_times):
+            # I actually think I caught this in the parser but JIC
+            msg = 'Different lengths of Navigation Start and End Times. The subject likely \
+                stopped in the middle of a trial. Remove the last trial and try again'
+            raise ValueError(msg)
 
-    spikes_navigation = subset_period_event_time_data(spikes, navigation_start_times, navigation_end_times)
-    n_spikes_navigation = len(spikes_navigation)
+        spikes_navigation = subset_period_event_time_data(spikes, navigation_start_times, navigation_end_times)
+        n_spikes_navigation = len(spikes_navigation)
 
-    print('\n -- UNIT DATA --')
-    print('Chosen example unit: \t\t\t {}'.format(unit_ix))
-    print('Total number of spikes: \t\t {}'.format(n_spikes_tot))
-    print('Number of spikes within session: \t {}'.format(n_spikes_ses)) 
-    print('Number of spikes within Trial {}: \t {}'.format(trial_ix, n_spikes_tix)) 
-    print('Number of spikes within navigation: \t {}'.format(n_spikes_navigation)) 
+        print('\n -- UNIT DATA --')
+        print('Chosen example unit: \t\t\t {}'.format(unit_ix))
+        print('Total number of spikes: \t\t {}'.format(n_spikes_tot))
+        print('Number of spikes within session: \t {}'.format(n_spikes_ses)) 
+        print('Number of spikes within Trial {}: \t {}'.format(trial_ix, n_spikes_tix)) 
+        print('Number of spikes within navigation: \t {}'.format(n_spikes_navigation)) 
     
 
     # -- HEAD DIRECTION DATA --
-    head_direction = nwbfile.acquisition['position']['head_direction']
-    hd_times = head_direction.timestamps[:]
-    hd_degrees = head_direction.data[:]
+    if head_direction_data:
+        head_direction = nwbfile.acquisition['position']['head_direction']
+        hd_times = head_direction.timestamps[:]
+        hd_degrees = head_direction.data[:]
 
-    print('\n -- HEAD DIRECTION DATA --')
-    print('Session | length of HD timestamps: \t {}'. format(len(hd_times)))
-    print('Session | length of HD degree array \t {}'.format(len(hd_degrees)))
-    print('Head direction degree range: \t\t [{}, {}]'.format(min(hd_degrees), max(hd_degrees)))
+        print('\n -- HEAD DIRECTION DATA --')
+        print('Session | length of HD timestamps: \t {}'. format(len(hd_times)))
+        print('Session | length of HD degree array \t {}'.format(len(hd_degrees)))
+        print('Head direction degree range: \t\t [{}, {}]'.format(min(hd_degrees), max(hd_degrees)))
 
     return
