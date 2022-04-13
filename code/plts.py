@@ -16,9 +16,9 @@ def plot_task_structure(trials, ax=None, **plt_kwargs):
         The TreasureHunt trials structure from a NWB file.
     """
 
-    _plot_task_structure([[trials.navigation_start[:], trials.navigation_end[:]],
-                          [trials.distractor_start[:], trials.distractor_end[:]],
-                          [trials.recall_start[:], trials.recall_end[:]]],
+    _plot_task_structure([[trials.navigation_start[:], trials.navigation_stop[:]],
+                          [trials.distractor_start[:], trials.distractor_stop[:]],
+                          [trials.recall_start[:], trials.recall_stop[:]]],
                          [trials.start_time[:], trials.stop_time[:]],
                          shade_colors=['green', 'orange', 'purple'],
                          line_colors=['red', 'black'],

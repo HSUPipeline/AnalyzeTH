@@ -5,7 +5,7 @@ import numpy as np
 ###################################################################################################
 ###################################################################################################
 
-def get_spike_positions(spikes, times, positions, threshold=100):
+def get_spike_positions(spikes, times, positions, threshold=0.25):
     """Get xy-positions for spike times."""
 
     spike_xs = []
@@ -24,7 +24,7 @@ def get_spike_positions(spikes, times, positions, threshold=100):
     return spike_xs, spike_ys
 
 
-def get_spike_heading(spikes, times, head_dirs, threshold=100):
+def get_spike_heading(spikes, times, head_dirs, threshold=0.25):
     """Get head direciton for spike times."""
 
     spike_hds = []

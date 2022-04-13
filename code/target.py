@@ -19,7 +19,6 @@ def compute_serial_position_fr(spikes, trial_starts, chest_openings, chest_trial
 
         t_st = trial_starts[t_ind]
         ch_openings = chest_openings[t_ind]
-        #ch_openings = chest_openings[chest_trials == t_ind]
         t_en = ch_openings[-1]
 
         t_mask = chest_trials == t_ind
@@ -33,7 +32,7 @@ def compute_serial_position_fr(spikes, trial_starts, chest_openings, chest_trial
         count = Counter({0 : 0, 1 : 0, 2 : 0, 3 : 0})
         count.update(np.digitize(t_spikes, ch_openings))
         inds = count.keys()
-        frs = np.array(list(count.values())) / seg_times * 1000
+        frs = np.array(list(count.values())) / seg_times
 
         all_frs[t_ind, :] = frs
 
@@ -64,7 +63,7 @@ def compute_spatial_target_bins(spikes, trial_starts, chest_openings, chest_tria
         count = Counter({0 : 0, 1 : 0, 2 : 0, 3 : 0})
         count.update(np.digitize(t_spikes, ch_openings))
 
-        frs = np.array(list(count.values())) / seg_times * 1000
+        frs = np.array(list(count.values())) / seg_times
 
         cur_ch_xbin = ch_xbin[t_mask]
         cur_ch_ybin = ch_ybin[t_mask]
