@@ -1,5 +1,3 @@
-
-
 import analyzeth.cmh.settings_analysis as SETTINGS
 from analyzeth.cmh.utils.load_nwb import load_nwb
 from analyzeth.cmh.utils.subset_data import subset_period_event_time_data, subset_period_data
@@ -7,16 +5,22 @@ from spiketools.utils import restrict_range
 import numpy as np 
 
 def nwb_info(
-        nwbfile = None,
-        data_folder = SETTINGS.DATA_FOLDER,
-        task = SETTINGS.TASK,
-        subject = SETTINGS.SUBJECT,
-        session = SETTINGS.SESSION,
-        unit_ix = SETTINGS.UNIT_IX,
-        trial_ix = SETTINGS.TRIAL_IX,
-        experiment_label = SETTINGS.ACQUISITION_LOCATION,
-        ):
+    nwbfile = None,
+    data_folder = SETTINGS.DATA_FOLDER,
+    task = SETTINGS.TASK,
+    subject = SETTINGS.SUBJECT,
+    session = SETTINGS.SESSION,
+    unit_ix = SETTINGS.UNIT_IX,
+    trial_ix = SETTINGS.TRIAL_IX,
+    experiment_label = SETTINGS.ACQUISITION_LOCATION
+    ):
+
+    """ 
+    Print relevant info for NWB file of interest 
     
+    If file is not provided it will load given data in analysis settings
+    """
+
     # load file if not given
     if nwbfile == None:
         nwbfile = load_nwb(task, subject, session, data_folder) 
