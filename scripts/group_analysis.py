@@ -10,8 +10,10 @@ from convnwb.io import get_files
 
 from spiketools.plts.data import plot_hist
 
+# Import settings from local file
 from settings import TASK, PATHS, IGNORE
 
+# Import local code
 import sys
 sys.path.append('../code')
 from reports import create_group_info, create_group_str, create_group_sessions_str

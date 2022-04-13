@@ -12,11 +12,12 @@ from convnwb.io import get_files, save_json
 
 from spiketools.measures import compute_spike_rate
 from spiketools.spatial.occupancy import compute_occupancy
-
 from spiketools.plts.data import plot_bar, plot_hist, plot_polar_hist
-from spiketools.plts.space import plot_heatmap
+from spiketools.plts.space import plot_heatmap, plot_positions
 from spiketools.plts.spikes import plot_unit_frs
+from spiketools.utils.trials import epoch_data_by_range
 
+# Import settings from local file
 from settings import TASK, PATHS, IGNORE, ANALYSIS_SETTINGS
 
 # Import local code
@@ -32,9 +33,14 @@ def main():
 
     print('\n\nRUNNING SESSION ANALYSES - {}\n\n'.format(TASK))
 
-    nwbfiles = get_files(DATA_PATH, select=TASK)
+    nwbfiles = get_files(PATHS['DATA'], select=TASK)
+
+    # Report settings
+    font_settings = {'fontdict' : {'fontsize' : 14}, 'ha' : 'center', 'va' : 'center'}
 
     for nwbfile in nwbfiles:
+
+        ## LOADING & DATA ACCESSING
 
         # Check and ignore files set to ignore
         if nwbfile.split('.')[0] in IGNORE:
@@ -51,15 +57,45 @@ def main():
         subj_id = nwbfile.subject.subject_id
         session_id = nwbfile.session_id
 
+        # Get epoch information
+        nav_starts = nwbfile.trials.navigation_start[:]
+        nav_stops = nwbfile.trials.navigation_stop[:]
+
+        # Get area ranges, adding a buffer to the z-range (for tower transport)
+        area_range = [nwbfile.acquisition['boundaries']['x_range'].data[:],
+                      nwbfile.acquisition['boundaries']['z_range'].data[:] + np.array([-10, 10])]
+
         # Get position & speed information
-        pos = nwbfile.acquisition['position']['xy_position']
+        positions = nwbfile.acquisition['position']['player_position'].data[:].T
+        ptimes = nwbfile.acquisition['position']['player_position'].timestamps[:]
+        stimes = nwbfile.processing['position_measures']['speed'].timestamps[:]
         speed = nwbfile.processing['position_measures']['speed'].data[:]
+
+        # Get head directions
+        hd_degrees = nwbfile.acquisition['position']['head_direction'].data[:]
+
+        # Get chest positions
+        chest_positions = nwbfile.acquisition['chest_positions']['chest_positions'].data[:].T
+
+        # Get position data for navigation segments
+        ptimes_trials, positions_trials = epoch_data_by_range(ptimes, positions, nav_starts, nav_stops)
+        stimes_trials, speed_trials = epoch_data_by_range(stimes, speed, nav_starts, nav_stops)
+
+        # Recombine position data across selected navigation trials
+        ptimes = np.hstack(ptimes_trials)
+        positions = np.hstack(positions_trials)
+        stimes = np.hstack(stimes_trials)
+        speed = np.hstack(speed_trials)
+
+        ## ANALYZE SESSION DATA
 
         # Initialize output unit file name & output dictionary
         name = session_id
         results = {}
 
-        ## ANALYZE SESSION DATA
+        # Get settings
+        BINS = ANALYSIS_SETTINGS['PLACE_BINS']
+        MIN_OCC = ANALYSIS_SETTINGS['MIN_OCCUPANCY']
 
         # Count confidence answers & fix empty values
         conf_counts = Counter(nwbfile.trials.confidence_response.data[:])
@@ -73,13 +109,16 @@ def main():
         n_keep = len(keep_inds)
 
         # Compute firing rates for all units marked to keep
-        frs = [compute_spike_rate(nwbfile.units.get_unit_spike_times(uind) / 1000) \
+        frs = [compute_spike_rate(nwbfile.units.get_unit_spike_times(uind)) \
             for uind in keep_inds]
 
         # Compute occupancy
-        occ = compute_occupancy(pos.data[:], pos.timestamps[:],
-                                ANALYSIS_SETTINGS['PLACE_BINS'],
-                                speed, set_nan=True)
+        occ = compute_occupancy(positions, ptimes, bins=BINS, speed=speed,
+                                minimum=MIN_OCC, area_range=area_range, set_nan=True)
+
+        # Collect information of interest
+        subject_info = create_subject_info(nwbfile)
+        behav_info = create_behav_info(nwbfile)
 
         ## CREATE REPORT
         # Initialize figure
@@ -89,11 +128,7 @@ def main():
 
         # 00: subject text
         ax00 = plt.subplot(grid[0, 0])
-
-        # Collect subject information
-        subject_info = create_subject_info(nwbfile)
-        subject_text = create_subject_str(subject_info)
-        ax00.text(0.5, 0.5, subject_text, fontdict={'fontsize' : 14}, ha='center', va='center');
+        ax00.text(0.5, 0.5, create_subject_str(subject_info), **font_settings);
         ax00.axis('off');
 
         # 01: neuron fig
@@ -103,8 +138,7 @@ def main():
 
         # 10: position text
         ax10 = plt.subplot(grid[1, 0])
-        position_text = create_position_str(ANALYSIS_SETTINGS['PLACE_BINS'], occ)
-        ax10.text(0.5, 0.5, position_text, fontdict={'fontsize' : 14}, ha='center', va='center');
+        ax10.text(0.5, 0.5, create_position_str(BINS, occ), **font_settings);
         ax10.axis('off');
 
         # 11: occupancy map
@@ -113,21 +147,16 @@ def main():
 
         # 12: subject positions overlaid with chest positions
         ax12 = plt.subplot(grid[1:3, 2])
-        ax12.plot(*nwbfile.acquisition['position']['xy_position'].data[:], alpha=0.5)
-        ax12.plot(*nwbfile.acquisition['chest_positions']['chest_positions'].data[:], '.g');
-        ax12.set(xticks=[], yticks=[]);
+        plot_positions(positions_trials, ax=ax12)
+        ax12.plot(*chest_positions, '.g');
 
         # 20: head direction
-        ax10 = plt.subplot(grid[2, 0], polar=True)
-        hd_degrees = nwbfile.acquisition['position']['head_direction'].data[:]
-        plot_polar_hist(hd_degrees, ax=ax10)
-        ax10.set_title('Head Direction')
+        ax20 = plt.subplot(grid[2, 0], polar=True)
+        plot_polar_hist(hd_degrees, title='Head Direction', ax=ax20)
 
         # 30: behaviour text
         ax20 = plt.subplot(grid[3, 0])
-        behav_info = create_behav_info(nwbfile)
-        behav_text = create_behav_str(behav_info)
-        ax20.text(0.5, 0.5, behav_text, fontdict={'fontsize' : 14}, ha='center', va='center');
+        ax20.text(0.5, 0.5, create_behav_str(behav_info),  **font_settings);
         ax20.axis('off');
 
         # 31: choice point plot
