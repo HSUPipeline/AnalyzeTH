@@ -11,31 +11,35 @@
 #
 
 
-
+# spiketools
+from spiketools.plts.utils import check_ax, savefig, set_plt_kwargs
 
 # Imports and format settings
 import matplotlib.pyplot as plt
 import seaborn as sns
-import analyzeth.timeCells.settings_plots as PLOTSETTINGS 
+import analyzeth.cmh.settings_plots as PLOTSETTINGS 
 sns.set()
 plt.rcParams.update(PLOTSETTINGS.plot_params)
 
 
 # -- HISTOGRAM PLOTS (Counts per bin) ---
-def _plot_time_cell (bin_len, 
-                     spikes_in_trial_time,
-                     bins_in_trial_time,
-                     spike_bin_counts,
-                     title = '',
-                     date='',
-                     SAVEFIG = False
-                     ):
+@savefig
+@set_plt_kwargs
+def _plot_time_cell (
+        bin_len, 
+        spikes_in_trial_time,
+        bins_in_trial_time,
+        spike_bin_counts,
+        title = '',
+        date='',
+        ax = None,
+        SAVEFIG = False,
+        **plt_kwargs
+        ):
     
     """Helper funciton for plotting time cell counts
 
     Can be used for single trial or sum of counts across all trials
-
-    Note: this should only really be used by calling functions in timeCellAnalysis
 
     PARAMETERS
     ----------
@@ -67,19 +71,20 @@ def _plot_time_cell (bin_len,
     fig, ax 
 
     """    
-    # -- PLOT --
-    if title == '':
-        title = 'Time Response Singe Unit'
-    
-    # Plot spikes per bin 
-    fig, ax = plt.subplots(1, 1, figsize = [10,5])
-                            
+
     # -- CATCH NO SPIKES --
     if sum(spike_bin_counts) == 0:
         print ('\n -- NO SPIKES FOUND --')
         print (title)
-        return fig, ax
+        return ax
+
+    # -- PLOT --
+    if title == '':
+        title = 'Time Response Singe Unit'
     
+    # Make ax if not given
+    ax = check_ax(ax, figsize = plt.kwargs.pop('figsize', None))         # fig, ax = plt.subplots(1, 1, figsize = [10,5])
+
     # Title
     plt.suptitle(title, x = 0.01, y = 1, ha = 'left', fontsize = 12)
     
@@ -104,7 +109,7 @@ def _plot_time_cell (bin_len,
     if SAVEFIG:
         plt.savefig(date + '_' + title + '.pdf')
     
-    return fig, ax
+    return ax
 
 def _plot_trial_time_and_movement(trial_ix,
                                   bin_len, 
