@@ -52,7 +52,7 @@ def head_direction_cell_session(
     VERBOSE = False
     ):
 
-    """ Analyze Head Direction Cell for Single Trial
+    """ Analyze Head Direction Cell for Single Session
 
     This will retun COUNT of spikes in given bin. See below for Firing Rate (Hz) per bin.
 
@@ -166,7 +166,6 @@ def head_direction_cell_session(
         plt.title('Spike HDs | Unit {}'.format(unit_ix))
         plt.show()
 
-
     # -------------------------------------------------------------------------------
     # -- STATISTICAL SHUFFLING --
     shuffled_spike_hds = []
@@ -185,20 +184,15 @@ def head_direction_cell_session(
                                             )
 
         for s_spikes in shuffled_spike_times:
-            shuffled_spikes_navigation = np.array([])
-            for ix in range(len(navigation_start_times)):
-                shuffled_spikes_navigation = np.append(
-                                                    shuffled_spikes_navigation,
-                                                    s_spikes[(s_spikes > navigation_start_times[ix]) \
-                                                        & (s_spikes < navigation_end_times[ix])],   # <= ?
-                                                    axis = 0
-                                                    )
-            
+            # Subset s_spikes during navigation
+            shuffled_spikes_navigation = subset_period_event_time_data(s_spikes, navigation_start_times, navigation_end_times)
             shuffled_spike_hds_ix = get_spike_heading(shuffled_spikes_navigation, hd_times, hd_degrees)
+            
+            # Collect data
             shuffled_spike_hds.append(shuffled_spike_hds_ix)
             bin_edges, counts = bin_circular(shuffled_spike_hds_ix)
             
-            
+            # Rayleigh
             shuffled_spike_bin_counts.append(counts)
             shuff_z_val, shuff_p_val = circ_rayleigh(convert_angles(shuffled_spike_hds_ix))
             shuffled_z_vals.append(shuff_z_val)
