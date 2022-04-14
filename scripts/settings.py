@@ -6,12 +6,13 @@ from pathlib import Path
 ###################################################################################################
 
 # Set which task to process
-TASK = 'THF'
+TASK = 'THO'
 
 ## PATHS
 
 # Set the data path to load from
-BASE_PATH = Path('/Users/tom/Documents/Data/JacobsLab/TH/')
+#BASE_PATH = Path('/Users/tom/Documents/Data/JacobsLab/TH/')
+BASE_PATH = Path('/scratch/tom.donoghue/TH/')
 DATA_PATH = BASE_PATH / 'NWB'
 
 # Set the path to save out reports & results
@@ -33,9 +34,9 @@ IGNORE = []
 ## UNIT SETTINGS
 
 # Set whether to skip units that have already been processed
-SKIP_ALREADY_RUN = True
+SKIP_ALREADY_RUN = False
 SKIP_FAILED = True
-CONTINUE_ON_FAIL = False
+CONTINUE_ON_FAIL = True
 
 UNIT_SETTINGS = {
     'SKIP_ALREADY_RUN' : SKIP_ALREADY_RUN,
@@ -67,7 +68,7 @@ ANALYSIS_SETTINGS = {
 ## SURROGATE SETTINGS
 
 # Settings for surrogate analyses
-N_SURROGATES = 100
+N_SURROGATES = 500
 SHUFFLE_APPROACH = 'BINCIRC'
 
 SURROGATE_SETTINGS = {

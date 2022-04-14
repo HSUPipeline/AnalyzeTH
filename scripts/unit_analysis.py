@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
 from pynwb import NWBHDF5IO
-from pingouin import convert_angles, circ_rayleigh
+#from pingouin import convert_angles, circ_rayleigh
 
 from convnwb.io import get_files, save_json
 
