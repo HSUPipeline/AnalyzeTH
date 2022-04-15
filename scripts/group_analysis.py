@@ -39,11 +39,9 @@ def main():
         'correct' : []
     }
 
-    # Report settings
-    font_settings = {'fontdict' : {'fontsize' : 14}, 'ha' : 'center', 'va' : 'center'}
-
     for nwbfile in nwbfiles:
 
+        ## LOADING & DATA ACCESSING
         # Check and ignore files set to ignore
         if nwbfile.split('.')[0] in IGNORE:
             print('Ignoring file: ', nwbfile)
@@ -65,6 +63,10 @@ def main():
         summary['error'].append(np.median(nwbfile.trials.error[:]))
         summary['correct'].append(np.mean(nwbfile.trials.correct[:]))
 
+        # Collect information of interest
+        group_info = create_group_info(summary)
+
+        ## CREATE REPORT
         # Initialize figure
         _ = plt.figure(figsize=(15, 12))
         grid = gridspec.GridSpec(3, 3, wspace=0.4, hspace=1.0)
@@ -73,9 +75,7 @@ def main():
 
         # 00: group text
         ax00 = plt.subplot(grid[0, 0])
-        subject_text = create_group_str(create_group_info(summary))
-        ax00.text(0.5, 0.5, subject_text, **font_settings);
-        ax00.axis('off');
+        plot_text(create_group_str(group_info), ax=ax00)
 
         # 01: neuron firing
         ax01 = plt.subplot(grid[0, 1])
@@ -91,9 +91,7 @@ def main():
 
         # 21: detailed session strings
         ax21 = plt.subplot(grid[2, 1])
-        session_text = '\n'.join(create_group_sessions_str(summary))
-        ax21.text(0.5, 0.5, session_text, **font_settings);
-        ax21.axis('off');
+        plot_text('\n'.join(create_group_sessions_str(summary)), ax=ax21)
 
         # Save out report
         report_name = 'group_report_' + TASK + '.pdf'

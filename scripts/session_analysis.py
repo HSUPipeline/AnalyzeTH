@@ -35,9 +35,6 @@ def main():
 
     nwbfiles = get_files(PATHS['DATA'], select=TASK)
 
-    # Report settings
-    font_settings = {'fontdict' : {'fontsize' : 14}, 'ha' : 'center', 'va' : 'center'}
-
     for nwbfile in nwbfiles:
 
         ## LOADING & DATA ACCESSING
@@ -128,8 +125,7 @@ def main():
 
         # 00: subject text
         ax00 = plt.subplot(grid[0, 0])
-        ax00.text(0.5, 0.5, create_subject_str(subject_info), **font_settings);
-        ax00.axis('off');
+        plot_text(create_subject_str(subject_info), ax=ax00)
 
         # 01: neuron fig
         ax01 = plt.subplot(grid[0, 1:])
@@ -138,8 +134,7 @@ def main():
 
         # 10: position text
         ax10 = plt.subplot(grid[1, 0])
-        ax10.text(0.5, 0.5, create_position_str(BINS, occ), **font_settings);
-        ax10.axis('off');
+        plot_text(create_position_str(BINS, occ), ax=ax10)
 
         # 11: occupancy map
         ax11 = plt.subplot(grid[1:3, 1])
@@ -156,8 +151,7 @@ def main():
 
         # 30: behaviour text
         ax20 = plt.subplot(grid[3, 0])
-        ax20.text(0.5, 0.5, create_behav_str(behav_info),  **font_settings);
-        ax20.axis('off');
+        plot_text(create_behav_str(behav_info), ax=ax20)
 
         # 31: choice point plot
         ax21 = plt.subplot(grid[3, 1])

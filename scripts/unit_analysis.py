@@ -55,9 +55,6 @@ def main():
     failed_files = get_files(PATHS['RESULTS'] / 'units' / TASK / 'zFailed',
                              select='json', drop_extensions=True)
 
-    # Report settings
-    font_settings = {'fontdict' : {'fontsize' : 14}, 'ha' : 'center', 'va' : 'center'}
-
     for nwbfilename in nwbfiles:
 
         ## DATA LOADING
@@ -309,8 +306,7 @@ def main():
 
                 # 01: unit information
                 ax01 = plt.subplot(grid[0, 1])
-                ax01.text(0.5, 0.7, create_unit_str(unit_info), **font_settings);
-                ax01.axis('off');
+                plot_text(create_unit_str(unit_info), ax=ax01)
                 ax01.set_title("Unit Information", fontdict={'fontsize' : 16}, y=1.2)
 
                 # 02: inter-spike intervals
