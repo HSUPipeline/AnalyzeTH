@@ -17,7 +17,7 @@ from spiketools.stats.shuffle import shuffle_spikes
 from spiketools.plts.spikes import plot_isis
 from spiketools.plts.space import plot_positions, plot_heatmap
 from spiketools.plts.trials import plot_rasters
-from spiketools.plts.data import plot_bar, plot_polar_hist
+from spiketools.plts.data import plot_bar, plot_polar_hist, plot_text
 from spiketools.plts.stats import plot_surrogates
 from spiketools.stats.permutations import zscore_to_surrogates, compute_empirical_pvalue
 from spiketools.spatial.occupancy import (compute_occupancy, compute_spatial_bin_edges,
