@@ -113,11 +113,11 @@ def main():
         speed = np.hstack(speed_trials)
 
         # Extract head position data
-        # hd_times = nwbfile.acquisition['position']['head_direction'].timestamps[:]
-        # hd_degrees = nwbfile.acquisition['position']['head_direction'].data[:]
+        # hd_times = nwbfile.acquisition['heading']['direction'].timestamps[:]
+        # hd_degrees = nwbfile.acquisition['heading']['direction'].data[:]
 
         # Get the chest positions
-        chest_xs, chest_ys = nwbfile.acquisition['chest_positions']['chest_positions'].data[:].T
+        chest_xs, chest_ys = nwbfile.acquisition['stimuli']['chest_positions'].data[:].T
 
         # TEMP: Fix for extra chest position
         if len(chest_xs) > len(chest_trials):

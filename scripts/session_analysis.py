@@ -69,10 +69,10 @@ def main():
         speed = nwbfile.processing['position_measures']['speed'].data[:]
 
         # Get head directions
-        hd_degrees = nwbfile.acquisition['position']['head_direction'].data[:]
+        hd_degrees = nwbfile.acquisition['heading']['direction'].data[:]
 
         # Get chest positions
-        chest_positions = nwbfile.acquisition['chest_positions']['chest_positions'].data[:].T
+        chest_positions = nwbfile.acquisition['stimuli']['chest_positions'].data[:].T
 
         # Get position data for navigation segments
         ptimes_trials, positions_trials = epoch_data_by_range(ptimes, positions, nav_starts, nav_stops)
