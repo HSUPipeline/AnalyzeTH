@@ -12,7 +12,7 @@ from convnwb.io import get_files, save_json
 
 from spiketools.measures import compute_spike_rate
 from spiketools.spatial.occupancy import compute_occupancy
-from spiketools.plts.data import plot_bar, plot_hist, plot_polar_hist
+from spiketools.plts.data import plot_bar, plot_hist, plot_polar_hist, plot_text
 from spiketools.plts.space import plot_heatmap, plot_positions
 from spiketools.plts.spikes import plot_unit_frs
 from spiketools.utils.trials import epoch_data_by_range

@@ -8,7 +8,7 @@ from pynwb import NWBHDF5IO
 
 from convnwb.io import get_files
 
-from spiketools.plts.data import plot_hist
+from spiketools.plts.data import plot_hist, plot_text
 
 # Import settings from local file
 from settings import TASK, PATHS, IGNORE
