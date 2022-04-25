@@ -94,7 +94,7 @@ def main():
 
         # Get area ranges, adding a buffer to the z-range (for tower transport)
         area_range = [nwbfile.acquisition['boundaries']['x_range'].data[:],
-                      nwbfile.acquisition['boundaries']['z_range'].data[:] + np.array([-10, 10])]
+                      nwbfile.acquisition['boundaries']['z_range'].data[:] + np.array([-15, 15])]
 
         # Get the position data & speed data
         ptimes = nwbfile.acquisition['position']['player_position'].timestamps[:]
