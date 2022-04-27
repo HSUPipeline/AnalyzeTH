@@ -1,5 +1,7 @@
 """"Functions for place analyses."""
 
+import warnings
+
 import numpy as np
 
 from spiketools.spatial.occupancy import (compute_nbins, compute_spatial_bin_assignment,
@@ -10,6 +12,25 @@ from analysis import get_spike_positions, compute_bin_firing
 
 ###################################################################################################
 ###################################################################################################
+
+def compute_place_bins(spikes, bins, ptimes, positions, speed,
+                       x_edges=None, y_edges=None, **occ_kwargs):
+    """Compute the binned firing rate based on player position."""
+
+    spike_xs, spike_ys = get_spike_positions(spikes, ptimes, positions)
+    spike_positions = np.array([spike_xs, spike_ys])
+
+    x_binl, y_binl = compute_spatial_bin_assignment(spike_positions, x_edges, y_edges)
+    bin_firing = compute_bin_firing(x_binl, y_binl, bins)
+
+    occ = compute_occupancy(positions, ptimes, bins, speed, **occ_kwargs)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        normed_bin_firing = bin_firing / occ
+
+    return normed_bin_firing
+
 
 def get_trial_place(spikes, trials, bins, ptimes, positions, speed,
                     x_edges=None, y_edges=None, occ_kwargs=None):
