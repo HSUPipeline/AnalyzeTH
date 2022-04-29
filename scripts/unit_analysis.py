@@ -31,15 +31,17 @@ from spiketools.utils.trials import (epoch_spikes_by_event, epoch_spikes_by_rang
                                      epoch_data_by_range)
 
 # Import settings from local file
-from settings import TASK, PATHS, IGNORE, UNIT_SETTINGS, ANALYSIS_SETTINGS, SURROGATE_SETTINGS
+from settings import (TASK, PATHS, IGNORE, UNIT_SETTINGS, METHOD_SETTINGS,
+                      ANALYSIS_SETTINGS, SURROGATE_SETTINGS)
 
 # Import local code
 import sys
 sys.path.append('../code')
 from utils import select_from_list
 from analysis import calc_trial_frs, get_spike_positions, compute_bin_firing, get_spike_heading
-from target import compute_spatial_target_bins
-from serial import compute_serial_position_fr
+from place import get_trial_place, compute_place_bins, create_df_place, fit_anova_place
+from target import compute_spatial_target_bins, get_trial_target, create_df_target, fit_anova_target
+from serial import compute_serial_position_fr, create_df_serial, fit_anova_serial
 from reports import *
 
 ###################################################################################################
@@ -183,18 +185,16 @@ def main():
                 spike_positions = np.array([spike_xs, spike_ys])
 
                 # Compute occupancy
-                occ = compute_occupancy(positions, ptimes, ANALYSIS_SETTINGS['PLACE_BINS'],
-                                        speed, minimum=ANALYSIS_SETTINGS['MIN_OCCUPANCY'],
-                                        area_range=area_range, set_nan=True)
+                occ_kwargs = {'minimum' : ANALYSIS_SETTINGS['MIN_OCCUPANCY'],
+                              'area_range' : area_range, 'set_nan' : True}
+                occ = compute_occupancy(positions, ptimes,
+                                        ANALYSIS_SETTINGS['PLACE_BINS'],
+                                        speed, **occ_kwargs)
 
-                # Compute spatial bin assignments & binned firing
+                # Compute spatial bin assignments & binned firing, and normalize by occupancy
                 x_binl, y_binl = compute_spatial_bin_assignment(spike_positions, x_bin_edges, y_bin_edges)
                 bin_firing = compute_bin_firing(x_binl, y_binl, ANALYSIS_SETTINGS['PLACE_BINS'])
-
-                # Normalize bin firing by occupancy
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    bin_firing = bin_firing / occ
+                bin_firing = bin_firing / occ
 
                 # Get head direction for each spike
                 #spike_hds = get_spike_heading(spikes, hd_times, hd_degrees)
@@ -214,17 +214,6 @@ def main():
                 # Compute chest occupancy
                 chest_occupancy = compute_bin_firing(ch_xbin, ch_ybin, ANALYSIS_SETTINGS['CHEST_BINS'])
 
-                # Collect firing per chest location across all trials
-                target_bins = compute_spatial_target_bins(spikes, nav_starts,
-                                                          chest_openings, chest_trials,
-                                                          ptimes, positions,
-                                                          ANALYSIS_SETTINGS['CHEST_BINS'],
-                                                          ch_xbin, ch_ybin)
-
-                # Compute firing rates per segment across all trials
-                sp_all_frs = compute_serial_position_fr(spikes, nav_starts, chest_openings,
-                                                        chest_trials, ptimes, positions)
-
                 ## STATISTICS
 
                 # Compute t-tests for chest related firing
@@ -232,12 +221,29 @@ def main():
                 fr_t_val_full, fr_p_val_full = ttest_rel(*calc_trial_frs(full_trials, average=False))
                 fr_t_val_empt, fr_p_val_empt = ttest_rel(*calc_trial_frs(empty_trials, average=False))
 
-                # Compute the spatial information
-                place_info = compute_spatial_information_2d(spike_xs, spike_ys,
-                                                            [x_bin_edges, y_bin_edges], occ)
+                # Place cell analysis
+                if METHOD_SETTINGS['PLACE'] == 'INFO':
+                    place_value = compute_spatial_information_2d(spike_xs, spike_ys, [x_bin_edges, y_bin_edges], occ)
+                if METHOD_SETTINGS['PLACE'] == 'ANOVA':
+                    place_trial = get_trial_place(spikes, nwbfile.trials, bins, ptimes, positions,
+                                                  speed, x_bin_edges, y_bin_edges, occ_kwargs)
+                    place_value = fit_anova_place(create_df_place(place_trial, drop_na=True))
 
-                # Compute spatial information for the target firing
-                target_info = _compute_spatial_information(target_bins, chest_occupancy)
+                # Target cell analysis
+                target_bins = compute_spatial_target_bins(\
+                    spikes, nav_starts, chest_openings, chest_trials, ptimes, positions,
+                    ANALYSIS_SETTINGS['CHEST_BINS'], ch_xbin, ch_ybin)
+                if METHOD_SETTINGS['TARGET'] == 'INFO':
+                    target_value = _compute_spatial_information(target_bins, chest_occupancy)
+                if METHOD_SETTINGS['TARGET'] == 'ANOVA':
+                    target_trial = get_trial_target(spikes, nav_starts, chest_bins, chest_openings,
+                                                    chest_trials, ch_xbin, ch_ybin, ptimes, positions)
+                    target_value = fit_anova_target(create_df_target(target_trial))
+
+                # Serial position analysis
+                sp_all_frs = compute_serial_position_fr(spikes, nav_starts, chest_openings,
+                                                        chest_trials, ptimes, positions)
+                sp_value = fit_anova_serial(create_df_serial(sp_all_frs))
 
                 # Compute measures for head direction
                 #hd_zstat, hd_pstat = circ_rayleigh(convert_angles(spike_hds))
@@ -247,45 +253,46 @@ def main():
                 # Compute surrogate measures
                 place_surrs = np.zeros(SURROGATE_SETTINGS['N_SURROGATES'])
                 target_surrs = np.zeros(SURROGATE_SETTINGS['N_SURROGATES'])
-                sp_surrs = np.zeros(shape=[SURROGATE_SETTINGS['N_SURROGATES'], 4])
+                sp_surrs = np.zeros(SURROGATE_SETTINGS['N_SURROGATES'])
                 #hd_surrs = np.zeros(SURROGATE_SETTINGS['N_SURROGATES'])
 
                 for ind, shuffle in enumerate(times_shuffle):
 
                     # PLACE
-                    s_spike_xs, s_spike_ys = get_spike_positions(shuffle, ptimes, positions)
-                    place_surrs[ind] = compute_spatial_information_2d(s_spike_xs, s_spike_ys,
-                                                                      [x_bin_edges, y_bin_edges], occ)
+                    if METHOD_SETTINGS['PLACE'] == 'INFO':
+                        s_spike_xs, s_spike_ys = get_spike_positions(shuffle, ptimes, positions)
+                        place_surrs[ind] = compute_spatial_information_2d(s_spike_xs, s_spike_ys,
+                                                                          [x_bin_edges, y_bin_edges], occ)
+                    if METHOD_SETTINGS['PLACE'] == 'ANOVA':
+                        s_place_trial = get_trial_place(shuffle, nwbfile.trials, bins, ptimes, positions,
+                                                      speed, x_bin_edges, y_bin_edges, occ_kwargs)
+                        place_surrs[ind] = fit_anova_place(create_df_place(s_place_trial, drop_na=True))
 
                     # TARGET
-                    s_target_bins = compute_spatial_target_bins(shuffle, nav_starts,
-                                                                chest_openings, chest_trials,
-                                                                ptimes, positions,
-                                                                ANALYSIS_SETTINGS['CHEST_BINS'],
-                                                                ch_xbin, ch_ybin)
-                    target_surrs[ind] = _compute_spatial_information(s_target_bins, chest_occupancy)
+                    if METHOD_SETTINGS['TARGET'] == 'INFO':
+                        s_target_bins = compute_spatial_target_bins(shuffle, nav_starts,
+                                                                    chest_openings, chest_trials,
+                                                                    ptimes, positions,
+                                                                    chest_bins, ch_xbin, ch_ybin)
+                        target_surrs[ind] = _compute_spatial_information(s_target_bins, chest_occupancy)
+                    if METHOD_SETTINGS['TARGET'] == 'ANOVA':
+                        s_target_trial = get_trial_target(shuffle, nav_starts, chest_bins, chest_openings,
+                                                        chest_trials, ch_xbin, ch_ybin, ptimes, positions)
+                        target_surrs[ind] = fit_anova_target(create_df_target(s_target_trial))
 
                     # SERIAL POSITION
-                    sp_surrs_frs = compute_serial_position_fr(\
-                        shuffle, nav_starts, chest_openings, chest_trials, ptimes, positions)
-                    sp_surrs[ind] = np.mean(sp_surrs_frs, 0)
+                    s_sp_all_frs = compute_serial_position_fr(shuffle, nav_starts, chest_openings,
+                                                              chest_trials, ptimes, positions)
+                    sp_surrs[ind] = fit_anova_serial(create_df_serial(s_sp_all_frs))
 
                     # HEAD DIRECTION
                     #s_spike_hds = get_spike_heading(shuffle, hd_times, hd_degrees)
                     #hd_surrs[ind] = circ_rayleigh(convert_angles(s_spike_hds))[0]
 
-
-                # Place surrogate measures
-                place_p_val, place_z_score = compute_surrogate_stats(place_info, place_surrs, False, False)
-
-                # Target surrogate measures
-                target_p_val, target_z_score = compute_surrogate_stats(target_info, target_surrs, False, False)
-
-                # Serial position surrogate measures
-                sp_p_vals = [compute_empirical_pvalue(sp_all_frs.mean(0)[ind], sp_surrs[:, ind]) for ind in range(4)]
-                sp_z_scores = [zscore_to_surrogates(sp_all_frs.mean(0)[ind], sp_surrs[:, ind]) for ind in range(4)]
-
-                # Head direction surrogate measures
+                # Compute surrogate statistics
+                place_p_val, place_z_score = compute_surrogate_stats(place_value, place_surrs, False, False)
+                target_p_val, target_z_score = compute_surrogate_stats(target_value, target_surrs, False, False)
+                sp_p_val, sp_z_score = compute_surrogate_stats(sp_value, sp_surrs, False, False)
                 #hd_p_val, hd_z_score = compute_surrogate_stats(hd_zstat, hd_surrs, False, False)
 
                 # Collect information of interest
@@ -351,17 +358,13 @@ def main():
 
                 # ax42: place surrogates
                 ax42 = plt.subplot(grid[4, 2])
-                plot_surrogates(place_surrs, place_info, place_p_val, ax=ax42)
+                plot_surrogates(place_surrs, place_value, place_p_val, ax=ax42)
                 ax42.set_title('Place Surrogates', color=color_pval(place_p_val))
 
                 # ax50: firing rates across trial segments
                 ax50 = plt.subplot(grid[5, 0])
-                plot_bar(sp_all_frs.mean(0), [0, 1, 2, 3], yerr=sem(sp_all_frs, 0), ax=ax50,
-                         title='Serial Position')
-                for ind, p_val in enumerate(sp_p_vals):
-                    if p_val < 0.05:
-                        ax50.text(ind, ax50.get_ylim()[1]-0.15*ax50.get_ylim()[1],
-                                '*', c='red', fontdict={'fontsize' : 25}, ha='center')
+                plot_bar(sp_all_frs.mean(0), [0, 1, 2, 3], yerr=sem(sp_all_frs, 0), ax=ax50)
+                ax50.set_title('Serial Position', color=color_pval(sp_p_val))
 
                 # ax51: spatial target firing
                 ax51 = plt.subplot(grid[5, 1])
@@ -370,7 +373,7 @@ def main():
 
                 # ax52: target surrogates
                 ax52 = plt.subplot(grid[5, 2])
-                plot_surrogates(target_surrs, target_info, target_p_val, ax=ax52)
+                plot_surrogates(target_surrs, target_value, target_p_val, ax=ax52)
                 ax52.set_title('Target Surrogates', color=color_pval(target_p_val))
 
                 # Add super title to the report
@@ -400,20 +403,14 @@ def main():
                 results['fr_p_val_empt'] = fr_p_val_empt
                 results['fr_t_val_full'] = fr_t_val_full
                 results['fr_p_val_full'] = fr_p_val_full
-                results['place_info'] = place_info
+                results['place_value'] = place_value
                 results['place_p_val'] = place_p_val
                 results['place_z_score'] = place_z_score
-                results['target_info'] = target_info
+                results['target_value'] = target_value
                 results['target_p_val'] = target_p_val
                 results['target_z_score'] = target_z_score
-                results['sp_p_val_0'] = sp_p_vals[0]
-                results['sp_p_val_1'] = sp_p_vals[1]
-                results['sp_p_val_2'] = sp_p_vals[2]
-                results['sp_p_val_3'] = sp_p_vals[3]
-                results['sp_z_score_0'] = sp_z_scores[0]
-                results['sp_z_score_1'] = sp_z_scores[1]
-                results['sp_z_score_2'] = sp_z_scores[2]
-                results['sp_z_score_3'] = sp_z_scores[3]
+                results['sp_p_val'] = sp_p_val
+                results['sp_z_score'] = sp_z_score
 
                 # results['hd_zstat'] = hd_zstat
                 # results['hd_pstat'] = hd_pstat

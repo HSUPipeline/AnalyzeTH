@@ -44,6 +44,16 @@ UNIT_SETTINGS = {
     'CONTINUE_ON_FAIL' : CONTINUE_ON_FAIL
 }
 
+## METHOD SETTINGS
+PLACE_METHOD = 'ANOVA'  # 'INFO', 'ANOVA'
+TARGET_METHOD = 'ANOVA'  # 'INFO', 'ANOVA'
+
+# Collect together method settings
+METHOD_SETTINGS = {
+    'PLACE' : PLACE_METHOD,
+    'TARGET' : TARGET_METHOD
+}
+
 ## ANALYSIS SETTINGS
 
 # Set the time range to analyze
