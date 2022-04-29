@@ -225,8 +225,8 @@ def main():
                 if METHOD_SETTINGS['PLACE'] == 'INFO':
                     place_value = compute_spatial_information_2d(spike_xs, spike_ys, [x_bin_edges, y_bin_edges], occ)
                 if METHOD_SETTINGS['PLACE'] == 'ANOVA':
-                    place_trial = get_trial_place(spikes, nwbfile.trials, bins, ptimes, positions,
-                                                  speed, x_bin_edges, y_bin_edges, occ_kwargs)
+                    place_trial = get_trial_place(spikes, nwbfile.trials, ANALYSIS_SETTINGS['PLACE_BINS'],
+                                                  ptimes, positions, speed, x_bin_edges, y_bin_edges, occ_kwargs)
                     place_value = fit_anova_place(create_df_place(place_trial, drop_na=True))
 
                 # Target cell analysis
@@ -236,8 +236,8 @@ def main():
                 if METHOD_SETTINGS['TARGET'] == 'INFO':
                     target_value = _compute_spatial_information(target_bins, chest_occupancy)
                 if METHOD_SETTINGS['TARGET'] == 'ANOVA':
-                    target_trial = get_trial_target(spikes, nav_starts, chest_bins, chest_openings,
-                                                    chest_trials, ch_xbin, ch_ybin, ptimes, positions)
+                    target_trial = get_trial_target(spikes, nav_starts, ANALYSIS_SETTINGS['CHEST_BINS'],
+                                                    chest_openings, chest_trials, ch_xbin, ch_ybin, ptimes, positions)
                     target_value = fit_anova_target(create_df_target(target_trial))
 
                 # Serial position analysis
@@ -264,20 +264,19 @@ def main():
                         place_surrs[ind] = compute_spatial_information_2d(s_spike_xs, s_spike_ys,
                                                                           [x_bin_edges, y_bin_edges], occ)
                     if METHOD_SETTINGS['PLACE'] == 'ANOVA':
-                        s_place_trial = get_trial_place(shuffle, nwbfile.trials, bins, ptimes, positions,
-                                                      speed, x_bin_edges, y_bin_edges, occ_kwargs)
+                        s_place_trial = get_trial_place(shuffle, nwbfile.trials, ANALYSIS_SETTINGS['PLACE_BINS'],
+                                                        ptimes, positions, speed, x_bin_edges, y_bin_edges, occ_kwargs)
                         place_surrs[ind] = fit_anova_place(create_df_place(s_place_trial, drop_na=True))
 
                     # TARGET
                     if METHOD_SETTINGS['TARGET'] == 'INFO':
-                        s_target_bins = compute_spatial_target_bins(shuffle, nav_starts,
-                                                                    chest_openings, chest_trials,
-                                                                    ptimes, positions,
-                                                                    chest_bins, ch_xbin, ch_ybin)
+                        s_target_bins = compute_spatial_target_bins(shuffle, nav_starts, chest_openings, chest_trials,
+                                                                    ptimes, positions, ANALYSIS_SETTINGS['CHEST_BINS'],
+                                                                    ch_xbin, ch_ybin)
                         target_surrs[ind] = _compute_spatial_information(s_target_bins, chest_occupancy)
                     if METHOD_SETTINGS['TARGET'] == 'ANOVA':
-                        s_target_trial = get_trial_target(shuffle, nav_starts, chest_bins, chest_openings,
-                                                        chest_trials, ch_xbin, ch_ybin, ptimes, positions)
+                        s_target_trial = get_trial_target(shuffle, nav_starts, ANALYSIS_SETTINGS['CHEST_BINS'],
+                                                          chest_openings, chest_trials, ch_xbin, ch_ybin, ptimes, positions)
                         target_surrs[ind] = fit_anova_target(create_df_target(s_target_trial))
 
                     # SERIAL POSITION
