@@ -1,13 +1,27 @@
 """"Functions for spatial target analyses."""
 
+from functools import partial
 from collections import Counter
 
 import numpy as np
 
 from spiketools.spatial.occupancy import compute_nbins
+from spiketools.stats.anova import create_dataframe, fit_anova
 from spiketools.utils.data import restrict_range, get_value_by_time, get_value_by_time_range
 
 from analysis import get_spike_positions
+
+###################################################################################################
+###################################################################################################
+
+# Define ANOVA model
+MODEL = 'fr ~ C(target_bin)'
+FEATURE = 'C(target_bin)'
+COLUMNS = ['target_bin', 'fr']
+
+# Create functions for target model
+create_df_target = partial(create_dataframe, columns=COLUMNS)
+fit_anova_target = partial(fit_anova, formula=MODEL, feature=FEATURE)
 
 ###################################################################################################
 ###################################################################################################

@@ -1,10 +1,24 @@
 """"Functions for serial position analyses."""
 
+from functools import partial
 from collections import Counter
 
 import numpy as np
 
+from spiketools.stats.anova import create_dataframe, fit_anova
 from spiketools.utils.data import restrict_range, get_value_by_time, get_value_by_time_range
+
+###################################################################################################
+###################################################################################################
+
+# Define ANOVA model
+MODEL = 'fr ~ C(segment)'
+FEATURE = 'C(segment)'
+COLUMNS = ['segment', 'fr']
+
+# Create functions for serial position model
+create_df_serial = partial(create_dataframe, columns=COLUMNS)
+fit_anova_serial = partial(fit_anova, formula=MODEL, feature=FEATURE)
 
 ###################################################################################################
 ###################################################################################################
