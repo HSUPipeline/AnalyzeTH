@@ -1,8 +1,10 @@
 
+from matplotlib import style
 import numpy as np
 from pingouin import convert_angles, circ_rayleigh
 
 from analyzeth.cmh.utils.subset_data import subset_period_event_time_data, subset_period_data
+from analyzeth.cmh.headDirection.headDirectionUtils import *
 from analyzeth.analysis import get_spike_heading, bin_circular
 from analyzeth.plts import plot_polar_hist
 
@@ -20,6 +22,27 @@ plt.rcParams.update(PLOTSETTINGS.plot_params)
 # Analysis settings
 import analyzeth.cmh.settings_analysis as SETTINGS
 
+def plot_hd(data, bin_edges = [], ax=None):
+    if not ax:
+        ax = plt.subplot(111, polar=True)
+    
+    #if len(bin_edges) == 0:
+    #    bin_edges = np.radians(np.arange(0,370,10))
+    binsize = 360/len(data)
+    bin_edges = np.radians(np.arange(0,361,binsize))
+
+    max_datum = max(data)
+    width = 2 * np.pi / (len(bin_edges)-1)
+
+    ax.bar(bin_edges[:-1], data, alpha = 0.5, width=width, align = 'edge', edgecolor = 'none' )
+    ax.set_rorigin(-1 * max_datum/5)
+
+    #rad_edges = np.radians(bin_edges)
+    #for xcoord in bin_edges:
+    #    plt.axvline(x=xcoord, linestyle= '--')
+
+
+    return ax
 
 def plot_polar_hist_overlay_surrs(hd_degrees, mean_shuffle_hd_counts, ax=None):
     """Plot a polar histogram.

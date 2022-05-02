@@ -23,6 +23,8 @@ def nwb_info(
     If file is not provided it will load given data in analysis settings
     """
 
+    # @ cmh fix this to get the subject metadata from nwb file
+
     # load file if not given
     if nwbfile == None:
         nwbfile = load_nwb(task, subject, session, data_folder) 

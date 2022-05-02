@@ -30,12 +30,16 @@ N_SURROGATES = 100
 # Choose TimeBin length 
 TIME_BIN_LENGTH_MS = 1000
 
+# Window size, step size for moving average FR
+WINDOW = 100    #ms
+STEP = 10       #ms
+
 # TC shuffle settings
 SHUFFLE_APPROACH_TC = 'BINCIRC'
 N_SURROGATES_TC = 100
 
 
-# -- HEAD DIRECTION ANALYSIS
+# -- HEAD DIRECTION ANALYSIS --
 # HD shuffle settings
 SHUFFLE_APPROACH_HD = 'ISI'
 N_SURROGATES_HD = 100

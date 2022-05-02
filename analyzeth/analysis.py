@@ -1,6 +1,7 @@
 """"Analysis functions for TH analysis."""
 
 import numpy as np
+from time import sleep
 
 ###################################################################################################
 ###################################################################################################
@@ -62,12 +63,9 @@ def get_spike_heading(spike_times, hd_times, hd_degrees):
     """
 
     spike_hds = []
-
-    for spike_time in spike_times:
-        
+    for ix, spike_time in enumerate(spike_times):      
         hd_idx = np.abs(hd_times[hd_times <= spike_time] - spike_time).argmin() 
         spike_hds.append(hd_degrees[hd_idx])
-
     return spike_hds
 
 
@@ -138,7 +136,7 @@ def compute_bin_firing(x_binl, y_binl, bins):
     return bin_firing
 
 
-def bin_circular(degrees):
+def bin_circular(degrees, binsize=10):
     """Bin circular data.
 
     Parameters
@@ -154,7 +152,7 @@ def bin_circular(degrees):
         Count values per bin.
     """
 
-    bin_edges = np.arange(0, 370, 10)
+    bin_edges = np.arange(0, 361, binsize)
     counts, _ = np.histogram(degrees, bins=bin_edges)
 
     return bin_edges, counts

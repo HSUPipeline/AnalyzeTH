@@ -2,8 +2,9 @@ import numpy as np
 
 def cell_firing_rate(
         spikes,         #ms - may be s now 
-        window = 100,   #ms 
-        step = 10       #ms 
+        len_epoch, 
+        window = 1000,   #ms 
+        step = 100       #ms 
         ):
 
     """ Calculate firing rate across epoch 
@@ -34,17 +35,28 @@ def cell_firing_rate(
 
     """
 
-    # Normalize spike time to start of spike triain
-    spikes = spikes - spikes[0]
-    
-    # Length of epoch 
-    len_epoch = spikes[-1] 
-
     # Reflect edges by window size
     window = int(window) if ((int(window) % 2) == 0) else int(window) + 1     # make window even
-    start_reflection = np.flipud(spikes[spikes < window])
-    end_reflection   = np.flipud(spikes[spikes > len_epoch - window])
+
+    # Start reflection (easy, * -1)
+    start_reflection = -1 * spikes[spikes < window]
+    
+    # End reflection (harder, reflect based on distance to end)
+    end_spikes = spikes[len_epoch - window < spikes]
+    end_reflection = []
+    if len(end_spikes) != 0:
+        for spike in end_spikes:
+            diff = len_epoch - spike
+            reflected_spike = spike + 2*diff
+            end_reflection.append(reflected_spike)
+
+    #start_reflection = np.flipud(spikes[spikes < window])
+    #end_reflection   = np.flipud(spikes[spikes > len_epoch - window])
     spikes = np.concatenate([start_reflection, spikes, end_reflection])
+
+    #print('heh')
+    #print(start_reflection)
+    #print(end_reflection)
 
     # Iter 
     num_bins = int(np.ceil(len_epoch/step)) + 1 
@@ -55,9 +67,23 @@ def cell_firing_rate(
         left = center - window/2
         right = center + window/2
         spikes_bin = spikes[(left<spikes) & (spikes < right)]
+
+ 
+        
         fr_bin = len(spikes_bin)/(window/1e3) # get FR in Hz 
+        
+        # if len(spikes_bin) != 0:
+            
+        #     print(center)
+            
+        #     print(spikes_bin)
+        #     print(window)
+        #     print(window/1e3)
+        #     print(fr_bin)
+
         times.append(center)
         FRs.append(fr_bin)
+
 
     # returning times in epoch time ms
     return FRs, times

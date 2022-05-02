@@ -3,7 +3,6 @@
 import os
 import numpy as np
 from pingouin import convert_angles, circ_rayleigh
-from scipy.stats import percentileofscore
 
 # NWB
 from pynwb import NWBHDF5IO
@@ -18,10 +17,9 @@ from spiketools.plts.trials import plot_rasters
 from analyzeth.cmh.utils.load_nwb import load_nwb
 from analyzeth.cmh.utils.nwb_info import nwb_info
 from analyzeth.cmh.utils.subset_data import subset_period_event_time_data, subset_period_data
-from analyzeth.analysis import get_spike_heading #, bin_circular
+from analyzeth.analysis import get_spike_heading, bin_circular
 from analyzeth.plts import plot_polar_hist
 from analyzeth.cmh.headDirection.headDirectionPlots import *
-from analyzeth.cmh.headDirection.headDirectionUtils import *
 
 # Plots
 import matplotlib.pyplot as plt 
@@ -31,15 +29,11 @@ sns.set()
 plt.rcParams.update(PLOTSETTINGS.plot_params)
 
 
-#pycirc
-
-
-
 # Analysis settings
 import analyzeth.cmh.settings_analysis as SETTINGS
 
 
-def headDirection_cell(
+def head_direction_cell_session(
     nwbfile = None,
     task = SETTINGS.TASK,
     subject = SETTINGS.SUBJECT,
@@ -55,10 +49,7 @@ def headDirection_cell(
     PLOT = False,
     PLOT_RASTER = False,
     SAVEFIG = False,
-    VERBOSE = False,
-
-    bin_size_degrees = 10,
-    occupancy = []
+    VERBOSE = False
     ):
 
     """ Analyze Head Direction Cell for Single Session
@@ -82,9 +73,6 @@ def headDirection_cell(
         dictionary containing data and figures of interest
     
     """
-    # Plot settings temp 
-    bin_edges = np.arange(0,361,bin_size_degrees)
-    n_bins = len(bin_edges) - 1
 
     # -------------------------------------------------------------------------------
     # -- LOAD & EXTRACT DATA --
@@ -115,7 +103,7 @@ def headDirection_cell(
     spikes = restrict_range(spikes, session_start, session_end)
     n_spikes_ses = len(spikes)
 
-    # Get spikes during navigation period 
+    # Get spikes during navigation periods 
     navigation_start_times = nwbfile.trials['navigation_start'][:]
     navigation_end_times = nwbfile.trials['navigation_end'][:]
     spikes_navigation = subset_period_event_time_data(spikes, navigation_start_times, navigation_end_times)
@@ -125,17 +113,6 @@ def headDirection_cell(
     head_direction = nwbfile.acquisition['position']['head_direction']
     hd_times = head_direction.timestamps[:]
     hd_degrees = head_direction.data[:]
-
-    # -- HD OCCUPANCY -- 
-    if len(occupancy) == 0:
-        occupancy = compute_hd_occupancy(nwbfile)
-
-    occupancy_hd_fig = None
-    if PLOT:
-        occpancy_hd_fig = plt.figure(figsize=[10,10])
-        ax = plot_hd(occupancy)
-        plt.title('HD Occupancy (sec) |  Navigation')
-        plt.show()
 
     # -------------------------------------------------------------------------------
     # -- PLOT RASTER --
@@ -160,15 +137,10 @@ def headDirection_cell(
 
     hd_fig = None
     if PLOT:
-        _, counts = bin_circular(hd_degrees)
-        hd_fig = plt.figure(figsize = [10,10])
-        plot_hd(counts)
-        plt.title('Head Direction (count) |  Session')
+        hd_fig = plt.figure()
+        hd_ax = plot_polar_hist(hd_degrees)
+        plt.title('Head Direction | Session')
         plt.show()
-
-
-    
-
 
     # -- HD SPIKE COUNTS --
     # Get spike headings
@@ -186,51 +158,17 @@ def headDirection_cell(
 
     spike_hd_fig = None
     if PLOT:
-        _, counts = bin_circular(spike_hds)
         spike_hd_fig = plt.figure()
-        plot_hd(counts)
-        plt.title('Spike HDs (count) | Unit {}'.format(unit_ix))
+        hd_spike_ax = plot_polar_hist(spike_hds)
+        plt.title('Spike HDs | Unit {}'.format(unit_ix))
         plt.show()
 
-    # Normalized to occupancy
-    _, spike_counts = bin_circular(spike_hds)
-    hd_firing_rate = spike_counts / occupancy
-
-    fig_hd_firing_rate = None
-    if PLOT:
-        fig_hd_firing_rate = plt.figure(figsize=[10,10])
-        plot_hd(hd_firing_rate)
-        plt.title('HD Firing Rate (Hz)  |  Unit {}'.format(unit_ix))
-        plt.show()
-
-    
-    # rayleigh
-    # ray_spike_hds = []
-    # for ix, bin in enumerate(hd_firing_rate):
-    #     # print(bin)
-    #     ray_spike_hds += int(10 * bin) * [bin_edges[ix]]
-
-    bin_weights = occupancy/sum(occupancy)
-    
-    spike_weights = []
-    for spike_hd in spike_hds:
-        for ix in range(len(bin_edges)):
-            if bin_edges[ix] < spike_hd and spike_hd < bin_edges[ix+1]:
-                spike_weights.append(spike_counts[ix])
-                #spike_weights.append(bin_weights[ix])
-                #spike_weights.append(occupancy[ix])
-    #spike_weights = 
-
-    fr_zval, fr_pval = circ_rayleigh(convert_angles(spike_hds), w = spike_weights, d = np.radians(10))
-    #print(fr_zval)
-    #print(fr_pval)
 
     # -------------------------------------------------------------------------------
     # -- STATISTICAL SHUFFLING -- 
 
     shuffled_spike_hds = []
     shuffled_spike_bin_counts = []
-    shuffled_hd_firing_rates = []
     shuffled_z_vals = []
     shuffled_p_vals = []
     surrogates_hd_fig = None
@@ -253,98 +191,38 @@ def headDirection_cell(
             
             # Collect data
             shuffled_spike_hds.append(shuffled_spike_hds_ix)
-            _, counts = bin_circular(shuffled_spike_hds_ix)
+            bin_edges, counts = bin_circular(shuffled_spike_hds_ix)
             shuffled_spike_bin_counts.append(counts)
 
-            # Normalize to occupancy
-            shuffled_hd_firing_rate =  counts / occupancy
-            shuffled_hd_firing_rates.append(shuffled_hd_firing_rate)
-
             # Rayleigh
-            shuffled_spike_weights = []
-            for spike_hd in shuffled_spike_hds_ix:
-                for ix in range(len(bin_edges)):
-                    if bin_edges[ix] < spike_hd and spike_hd < bin_edges[ix+1]:
-                        shuffled_spike_weights.append(spike_counts[ix])
-
-            shuff_z_val, shuff_p_val = circ_rayleigh(
-                convert_angles(shuffled_spike_hds_ix), 
-                w = shuffled_spike_weights, 
-                d = np.radians(10))
+            shuff_z_val, shuff_p_val = circ_rayleigh(convert_angles(shuffled_spike_hds_ix))
             shuffled_z_vals.append(shuff_z_val)
             shuffled_p_vals.append(shuff_p_val)
         
         # Compare real with shuffle
-        emperical_p_val = compute_empirical_pvalue(fr_zval, shuffled_z_vals)
+        emperical_p_val = compute_empirical_pvalue(spike_hd_z_val, shuffled_z_vals)
 
         # Mean shuffled
         mean_shuffled_hd_counts =  np.mean(shuffled_spike_bin_counts, axis = 0)
         if PLOT:
             # Surrogates alone
             surrogates_hd_fig = plt.figure()
-            #ax = plt.subplot(111, polar=True)
-
-            #_,counts = bin_circular(mean_shuffled_hd_counts)
-            plot_hd(mean_shuffled_hd_counts)
-            
-            #ax.bar(bin_edges[:-1], mean_shuffled_hd_counts)
+            ax = plt.subplot(111, polar=True)
+            ax.bar(bin_edges[:-1], mean_shuffled_hd_counts)
             plt.title('Surrogates HD')
             plt.show()
 
             # Surrogates over original
-            overlay_surrogates_fig = plt.figure()
-            ax = plt.subplot(111, polar=True) 
-            _,counts = bin_circular(spike_hds)
-            plot_hd(counts, ax=ax)
-            plot_hd(mean_shuffled_hd_counts, ax=ax)
+            overlay_surrogates_fig = plt.figure() 
+            ax = plot_polar_hist(spike_hds)
+            ax.bar(bin_edges[:-1], mean_shuffled_hd_counts)
+            
             plt.title('Overlay')
             plt.show()
 
-        # Normalized FR shuffled
-        mean_shuffled_hd_firing_rate =  np.mean(shuffled_hd_firing_rates, axis = 0)
-        
-        if PLOT:
-            # Surrogates alone
-            surrogates_hd_fig = plt.figure()
-            plot_hd(mean_shuffled_hd_firing_rate)
-            plt.title('Surrogates HD FR')
-            plt.show()
-
-            # Surrogates over original
-            overlay_surrogates_fig = plt.figure(figsize=[10,10]) 
-            ax = plt.subplot(111, polar=True)
-            plot_hd(hd_firing_rate, ax=ax)
-            plot_hd(mean_shuffled_hd_firing_rate, ax=ax)
-            plt.title('Overlay')
-            plt.show()
-
-
-        # compare by bin
-        shuffled_frs = np.array(shuffled_hd_firing_rates)
-        bin_hd_percentiles = np.array([percentileofscore(shuffled_frs[:,bin_ix], hd_firing_rate[bin_ix]) for bin_ix in range(n_bins)])
-        bin_hd_pvals = 1 - bin_hd_percentiles
-        # bin_hd_percentiles = []
-        # for bin_ix in range(n_bins):
-        #     actual_fr = hd_firing_rate[bin_ix]
-        #     shuffled_frs = np.array(shuffled_hd_firing_rates)[:, bin_ix]
-        #     hd_percentile = percentileofscore(shuffled_frs, actual_fr)
-        #     bin_hd_percentiles.append(hd_percentile)
-
-
-    if PLOT:
-        fig, ax = plt.subplots(figsize=[15,8])
-        sns.boxplot(data = np.array(shuffled_hd_firing_rates), color = 'lightgray', notch= True, saturation=0.5)
-        
-        sns.pointplot(data = np.array(shuffled_hd_firing_rates), color = 'r', join = False, ci=95)
-        sns.scatterplot(data = hd_firing_rate, color = 'b', s = 100)
-        xlabels = np.arange(0,360,10)
-        ax.set_xticklabels(xlabels, rotation = 90)
-        ax.set_ylabel('Firing Rate (Hz)')
-        ax.set_xlabel('Degrees')
-        plt.show()
 
     # -- RETURN --
-    res = {
+    return_dict = {
         # General Head Direction
         'hd_degrees'            : hd_degrees,
         'hd_times'              : hd_times,
@@ -357,14 +235,10 @@ def headDirection_cell(
         'spike_hd_z_val'        : spike_hd_z_val,
         'spike_hd_p_val'        : spike_hd_p_val,
 
-        # HD FR
-        'hd_firing_rate'       : hd_firing_rate,
-
         # Raster
         'raster_fig'            : raster_fig,
 
         # Shuffle
-        'shuffled_hd_firing_rates' : shuffled_hd_firing_rates,
         'shuffled_spike_hds'    : shuffled_spike_hds,
         'shuffled_z_vals'       : shuffled_z_vals, 
         'shuffled_p_vals'       : shuffled_p_vals,
@@ -372,9 +246,7 @@ def headDirection_cell(
         'overlay_surrogates_fig': overlay_surrogates_fig,
 
         # Stat
-        'emperical_p_val'       : emperical_p_val,
-        'bin_hd_percentiles'    : bin_hd_percentiles,
-        'bin_hd_pvals'          : bin_hd_pvals
+        'emperical_p_val'       : emperical_p_val
     }
 
-    return res
+    return return_dict
