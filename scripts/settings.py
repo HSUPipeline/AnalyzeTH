@@ -34,14 +34,24 @@ IGNORE = []
 ## UNIT SETTINGS
 
 # Set whether to skip units that have already been processed
-SKIP_ALREADY_RUN = False
-SKIP_FAILED = True
+SKIP_ALREADY_RUN = True
+SKIP_FAILED = False
 CONTINUE_ON_FAIL = True
 
 UNIT_SETTINGS = {
     'SKIP_ALREADY_RUN' : SKIP_ALREADY_RUN,
     'SKIP_FAILED' : SKIP_FAILED,
     'CONTINUE_ON_FAIL' : CONTINUE_ON_FAIL
+}
+
+## METHOD SETTINGS
+PLACE_METHOD = 'ANOVA'  # 'INFO', 'ANOVA'
+TARGET_METHOD = 'ANOVA'  # 'INFO', 'ANOVA'
+
+# Collect together method settings
+METHOD_SETTINGS = {
+    'PLACE' : PLACE_METHOD,
+    'TARGET' : TARGET_METHOD
 }
 
 ## ANALYSIS SETTINGS
