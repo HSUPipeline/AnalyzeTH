@@ -304,8 +304,7 @@ def main():
 
                 # 00: plot rasters across all trials
                 ax00 = plt.subplot(grid[0, 0])
-                plot_rasters(all_trials, ax=ax00, title='All Trials')
-
+                plot_rasters(all_trials, ax=ax00, title='All Trialsmpt
                 # 01: unit information
                 ax01 = plt.subplot(grid[0, 1])
                 plot_text(create_unit_str(unit_info), ax=ax01)
@@ -317,26 +316,25 @@ def main():
                 plot_isis(isis, bins=100, range=(0, 2), ax=ax02)
 
                 # 10: chest related firing
+                title_str = '{} - Pre: {:1.2f} - Pos: {:1.2f}  (t:{:1.2f}, p:{:1.2f})'
                 ax10 = plt.subplot(grid[1:3, 0:2])
                 plot_rasters(all_chests, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'],
                              vline=0, figsize=(10, 7), ax=ax10)
-                title_str = 'All Trials - Pre: {:1.2f} - Pos: {:1.2f}  (t:{:1.2f}, p:{:1.2f})'
-                ax10.set_title(title_str.format(fr_pre_all, fr_post_all, fr_t_val_all, fr_p_val_all),
+                ax10.set_title(title_str.format('All Chests', fr_pre_all, fr_post_all, fr_t_val_all, fr_p_val_all),
                                color=color_pval(fr_p_val_all))
 
                 # 12&22: Compare Empty & Full chest trials
-                title_str = '{} Chests - Pre: {:1.2f} - Pos: {:1.2f}'
                 # Empty chest trials
                 ax12 = plt.subplot(grid[1, 2])
                 plot_rasters(empty_trials, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'], vline=0, ax=ax12)
-                ax12.set_title(title_str.format('Empty', fr_pre_empt, fr_post_empt),
-                               color=color_pval(fr_p_val_empt))
+                ax12.set_title(title_str.format('Empty', fr_pre_empt, fr_post_empt, fr_t_val_empt, fr_p_val_empt),
+                               color=color_pval(fr_p_val_empt), fontdict={'fontsize' : 14})
 
                 # Full chest trials
                 ax22 = plt.subplot(grid[2, 2])
                 plot_rasters(full_trials, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'], vline=0, ax=ax22)
-                ax22.set_title(title_str.format('Full', fr_pre_full, fr_post_full),
-                               color=color_pval(fr_p_val_full))
+                ax22.set_title(title_str.format('Full', fr_pre_full, fr_post_full, fr_t_val_full, fr_p_val_full),
+                               color=color_pval(fr_p_val_full), fontdict={'fontsize' : 14})
 
                 # ax30: positional firing
                 ax30 = plt.subplot(grid[3:5, 0])
@@ -402,12 +400,14 @@ def main():
                 results['fr_p_val_empt'] = fr_p_val_empt
                 results['fr_t_val_full'] = fr_t_val_full
                 results['fr_p_val_full'] = fr_p_val_full
+                
                 results['place_value'] = place_value
                 results['place_p_val'] = place_p_val
                 results['place_z_score'] = place_z_score
                 results['target_value'] = target_value
                 results['target_p_val'] = target_p_val
                 results['target_z_score'] = target_z_score
+                results['sp_value'] = sp_value
                 results['sp_p_val'] = sp_p_val
                 results['sp_z_score'] = sp_z_score
 

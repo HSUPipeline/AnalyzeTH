@@ -34,8 +34,8 @@ IGNORE = []
 ## UNIT SETTINGS
 
 # Set whether to skip units that have already been processed
-SKIP_ALREADY_RUN = False
-SKIP_FAILED = True
+SKIP_ALREADY_RUN = True
+SKIP_FAILED = False
 CONTINUE_ON_FAIL = True
 
 UNIT_SETTINGS = {
