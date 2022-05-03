@@ -33,14 +33,11 @@ def compute_serial_position_fr(spikes, nav_starts, chest_openings, chest_trials,
         ch_openings = chest_openings[t_ind]
         t_en = ch_openings[-1]
 
-        t_mask = chest_trials == t_ind
-
-        t_time, t_pos = get_value_by_time_range(ptimes, positions, t_st, t_en)
-        ch_times = [get_value_by_time(t_time, t_pos, ch_op) for ch_op in ch_openings]
+        chest_trials == t_ind
 
         t_spikes = restrict_range(spikes, t_st, t_en)
 
-        seg_times = np.diff(np.insert(ch_openings, 0, t_time[0]))
+        seg_times = np.diff(np.insert(ch_openings, 0, t_st))
         count = Counter({0 : 0, 1 : 0, 2 : 0, 3 : 0})
         count.update(np.digitize(t_spikes, ch_openings))
         inds = count.keys()
