@@ -241,8 +241,7 @@ def main():
                     target_value = fit_anova_target(create_df_target(target_trial))
 
                 # Serial position analysis
-                sp_all_frs = compute_serial_position_fr(spikes, nav_starts, chest_openings,
-                                                        chest_trials, ptimes, positions)
+                sp_all_frs = compute_serial_position_fr(spikes, nav_starts, chest_openings, chest_trials)
                 sp_value = fit_anova_serial(create_df_serial(sp_all_frs))
 
                 # Compute measures for head direction
@@ -280,8 +279,7 @@ def main():
                         target_surrs[ind] = fit_anova_target(create_df_target(s_target_trial))
 
                     # SERIAL POSITION
-                    s_sp_all_frs = compute_serial_position_fr(shuffle, nav_starts, chest_openings,
-                                                              chest_trials, ptimes, positions)
+                    s_sp_all_frs = compute_serial_position_fr(shuffle, nav_starts, chest_openings, chest_trials)
                     sp_surrs[ind] = fit_anova_serial(create_df_serial(s_sp_all_frs))
 
                     # HEAD DIRECTION
@@ -400,7 +398,7 @@ def main():
                 results['fr_p_val_empt'] = fr_p_val_empt
                 results['fr_t_val_full'] = fr_t_val_full
                 results['fr_p_val_full'] = fr_p_val_full
-                
+
                 results['place_value'] = place_value
                 results['place_p_val'] = place_p_val
                 results['place_z_score'] = place_z_score
