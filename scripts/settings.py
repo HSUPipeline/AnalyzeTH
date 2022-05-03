@@ -34,7 +34,7 @@ IGNORE = []
 ## UNIT SETTINGS
 
 # Set whether to skip units that have already been processed
-SKIP_ALREADY_RUN = True
+SKIP_ALREADY_RUN = False
 SKIP_FAILED = False
 CONTINUE_ON_FAIL = True
 
@@ -62,7 +62,8 @@ TRIAL_RANGE = [-1, 1]
 # Set the spatial bin definitions
 #PLACE_BINS = [7, 21]
 PLACE_BINS = [9, 12]
-CHEST_BINS = [5, 7]
+#CHEST_BINS = [5, 7]
+CHEST_BINS = [6, 8]
 
 # Occupancy settings
 MIN_OCCUPANCY = 1
@@ -79,7 +80,7 @@ ANALYSIS_SETTINGS = {
 
 # Settings for surrogate analyses
 N_SURROGATES = 500
-SHUFFLE_APPROACH = 'BINCIRC'
+SHUFFLE_APPROACH = 'CIRCULAR'   # 'CIRCULAR', 'BINCIRC'
 
 SURROGATE_SETTINGS = {
     'N_SURROGATES' : N_SURROGATES,
