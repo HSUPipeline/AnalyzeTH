@@ -23,7 +23,7 @@ fit_anova_serial = partial(fit_anova, formula=MODEL, feature=FEATURE)
 ###################################################################################################
 ###################################################################################################
 
-def compute_serial_position_fr(spikes, nav_starts, chest_openings, chest_trials, ptimes, positions):
+def compute_serial_position_fr(spikes, nav_starts, chest_openings, chest_trials):
     """Collect firing rates per segment across all trials"""
 
     all_frs = np.zeros([len(nav_starts), 4])
