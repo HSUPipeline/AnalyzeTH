@@ -302,7 +302,7 @@ def main():
 
                 # 00: plot rasters across all trials
                 ax00 = plt.subplot(grid[0, 0])
-                plot_rasters(all_trials, ax=ax00, title='All Trialsmpt
+                plot_rasters(all_trials, ax=ax00, title='All Trials')
                 # 01: unit information
                 ax01 = plt.subplot(grid[0, 1])
                 plot_text(create_unit_str(unit_info), ax=ax01)
