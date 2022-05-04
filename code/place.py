@@ -7,10 +7,11 @@ import numpy as np
 
 from spiketools.stats.anova import create_dataframe, fit_anova
 from spiketools.spatial.occupancy import (compute_nbins, compute_spatial_bin_assignment,
-                                          compute_occupancy)
+                                          compute_bin_firing, compute_occupancy)
 from spiketools.utils.data import restrict_range, get_value_by_time_range
 
-from analysis import get_spike_positions, compute_bin_firing
+# import local code
+from analysis import get_spike_positions
 
 ###################################################################################################
 ###################################################################################################
@@ -35,7 +36,7 @@ def compute_place_bins(spikes, bins, ptimes, positions, speed,
     spike_positions = np.array([spike_xs, spike_ys])
 
     x_binl, y_binl = compute_spatial_bin_assignment(spike_positions, x_edges, y_edges)
-    bin_firing = compute_bin_firing(x_binl, y_binl, bins)
+    bin_firing = compute_bin_firing(bins, x_binl, y_binl)
 
     occ = compute_occupancy(positions, ptimes, bins, speed, **occ_kwargs)
 
@@ -70,7 +71,7 @@ def get_trial_place(spikes, trials, bins, ptimes, positions, speed,
         tocc = compute_occupancy(t_pos, t_times, bins, t_speed, **occ_kwargs)
 
         # Compute and collect binned firing per trial
-        bin_firing_trial[ind, :] = (compute_bin_firing(xt_bin, yt_bin, bins)).flatten()
+        bin_firing_trial[ind, :] = (compute_bin_firing(bins, xt_bin, yt_bin)).flatten()
         bin_firing_trial_norm[ind, :] = bin_firing_trial[ind, :] / tocc.flatten()
 
     return bin_firing_trial_norm
