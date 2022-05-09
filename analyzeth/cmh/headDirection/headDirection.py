@@ -24,7 +24,14 @@ def nwb_headDirection_session(nwbfile, n_surrogates = 1000, plot=False):
     """
     
     occupancy = compute_hd_occupancy(nwbfile, return_hds = False, smooth = True, windowsize = 23, binsize = 1)
-    
+    if plot:
+        fig = plt.figure(figsize=[10,10])
+        plot_hd(occupancy)
+        plt.title('Occupancy (sec)')
+        plt.xlabel('')
+        plt.ylabel('')
+        plt.show()
+
     n_units = len(nwbfile.units)
     for unit_ix in range(n_units):
         print(f'Working on unit {unit_ix}...')
@@ -32,23 +39,38 @@ def nwb_headDirection_session(nwbfile, n_surrogates = 1000, plot=False):
     return 
 
 
-def nwb_headDirection_cell(nwbfile, unit_ix, occupancy = [], n_surrogates = 1000, plot = False):
+def nwb_headDirection_cell(nwbfile, unit_ix, 
+        occupancy = [], 
+        n_surrogates = 1000, 
+        binsize = 1, 
+        windowsize = 23, 
+        smooth = True, 
+        plot = False
+        ):
     """
     Run head direction analysis for unit and compare to surrogates
     """
+
+    # Occupancy
     if occupancy == []:
-        occupancy = compute_hd_occupancy(nwbfile, return_hds = False, smooth = True, windowsize = 23, binsize = 1)
-    hd_hist = nwb_hd_cell_hist(nwbfile, unit_ix)
-    hd_hist_norm = normalize_hd_hist_to_occupancy(hd_hist, occupancy)
+        occupancy = compute_hd_occupancy(nwbfile, binsize, windowsize, smooth)
     
+    # Head direction
+    hd_hist = nwb_hd_cell_hist(nwbfile, unit_ix, binsize, windowsize, smooth)
+    hd_score = compute_hd_score(hd_hist)
+    hd_hist_norm = normalize_hd_hist_to_occupancy(hd_hist, occupancy)
+    hd_norm_score = compute_hd_score(hd_hist)
+
     # Shuffle
     shuffled_spikes = nwb_shuffle_spikes_bincirc_navigation(nwbfile, unit_ix, n_surrogates, shift_range = [5e3, 20e3], verbose=False)
     head_direction = nwbfile.acquisition['position']['head_direction']
     hd_times = head_direction.timestamps[:]
     hd_degrees = head_direction.data[:]
     surrogate_hds = get_hd_shuffled_head_directions(shuffled_spikes, hd_times, hd_degrees)
-    surrogate_histograms = get_hd_surrogate_histograms(surrogate_hds)
+    surrogate_histograms = get_hd_surrogate_histograms(surrogate_hds, binsize, windowsize, smooth)
     surrogates_norm = normalize_hd_surrogate_histograms_to_occupancy(surrogate_histograms, occupancy)
+    surrogates_ci95 = compute_ci95_from_surrogates(surrogates_norm)
+
 
     if plot:
         fig = plt.figure(figsize = [10,10])
@@ -60,7 +82,16 @@ def nwb_headDirection_cell(nwbfile, unit_ix, occupancy = [], n_surrogates = 1000
         plt.ylabel('')
         plt.show()
 
-    return
+    res = {
+        'hd_score'                  : hd_score,
+        'hd_score_norm'             : hd_norm_score,
+        'hd_histogram'              : hd_hist,
+        'hd_histogram_norm'         : hd_hist_norm,
+        'surrogate_histograms'      : surrogate_histograms,
+        'surrogate_histogams_norm'  : surrogates_norm,
+        'surrogates_ci95'           : surrogates_ci95
+    }
+    return res
         
 
 
@@ -102,15 +133,38 @@ def nwb_hd_cell_hist(nwbfile, unit_ix = 0, binsize = 1, windowsize = 23,  smooth
 
     # Histogram
     hd_histogram = get_hd_histogram(hd_spikes, binsize, windowsize, smooth)
-    
+
     return hd_histogram
 
 def normalize_hd_hist_to_occupancy(hd_hist, occupancy=[], nwbfile = None, binsize = 1, smooth= True, windowsize = 23):
+    """
+    Normalize histogram or set of histograms to occpancy. Occupancy is seconds spent in each bin, thus
+    this generates a psuedo firing rate in Hz per bin
+    """
     # Occupancy - seconds per bin
     if occupancy == []:
         occupancy = compute_hd_occupancy(nwbfile, binsize, smooth, windowsize)
     hd_firingRate =  hd_hist/ occupancy
     return hd_firingRate
+
+def compute_hd_score(hd_hist):
+    """
+    Compute head direction score based on method from Gerlei 2020
+
+    HD score should be >= 0.5 to be hd cell
+
+    """
+    n_bins = len(hd_hist)
+    binsize = 360/n_bins
+    degs = np.arange(0, 360, binsize)
+    rads = np.radians(degs)
+    dy = np.sin(rads)
+    dx = np.cos(rads)
+    xtotal = sum(dx * hd_hist)/sum(hd_hist)
+    ytotal = sum(dy * hd_hist)/sum(hd_hist)
+    hd_score = np.sqrt(xtotal**2 + ytotal**2)
+
+    return hd_score
 
 def shuffle_spikes_navigation(nwbfile, unit_ix, approach = 'ISI', n = 100):
     """     
@@ -224,14 +278,11 @@ def shuffle_spikes_bincirc_epochs(spikes, epoch_start_times, epoch_end_times, n 
     shuffled_spikes = np.zeros([n, len(spikes)])
     for ix in range(n):
         shuffle_circ_ammount = np.random.uniform(shift_range[0], shift_range[1], len(epoch_start_times))                                                      # ammount to circularly shuffle each bin (between 1-10 seconds)
-        
         if verbose:
             print('Surrogate {} ---- Shuffle circ ammount {}'.format(ix, shuffle_circ_ammount))
-        
+
         shuffled_spikes_n = [] 
         for le, re, shift in zip(epoch_start_times, epoch_end_times, shuffle_circ_ammount):
-
-
             spikes_bin = spikes[(le < spikes) & (spikes < re)]
             shuffled_spikes_bin = shuffle_roll_binned_times(spikes_bin, le, re, shift)
             shuffled_spikes_n.append(shuffled_spikes_bin)
@@ -277,25 +328,13 @@ def shuffle_roll_binned_times (spikes, left_edge, right_edge, shift):
     within_bin, right = shifted[shifted < right_edge],shifted[right_edge <= shifted]
     binsize = right_edge - left_edge
     rolled = right - binsize
-
+    
     # Combine rolled spike times
     shuffled_spikes = np.sort(np.hstack([rolled, within_bin]))
-
     
-        # print('le, re, shift: \t', left_edge, right_edge, shift)
-        # fig, ax = plt.subplots (figsize = [10,8])
-        # ax.eventplot(shuffled_spikes)
-        # ax.vlines([left_edge, right_edge], -1, 1,linestyles='dashed')
-        # plt.show()
-
     # check and fix if any are still ouside bin (i.e. due to shift larger than epoch size)
     if len(shuffled_spikes[right_edge <= shuffled_spikes]) > 0:
         shuffled_spikes = shuffle_roll_binned_times(shuffled_spikes, left_edge, right_edge, 0)
-            # print ('after reroll')
-            # fig, ax = plt.subplots (figsize = [10,8])
-            # ax.eventplot(shuffled_spikes)
-            # ax.vlines([left_edge, right_edge], -1, 1,linestyles='dashed')
-            # plt.show()
     return shuffled_spikes
 
 
@@ -351,39 +390,37 @@ def get_probability_histogram_from_hd_histogram(hd_histogram):
         
 
 
-def compute_95ci_from_surrogates(surrogate_histograms):
-    return
 
-def compare_hd_histogram_to_surrogates(hd_histogram, surrogate_histograms):
+def compute_ci95_from_surrogates(surrogates):
+    """
+    For each bin compute the ci95, return as 2d array high over low for each bin
+    """
+    n_surrogates, n_bins = surrogates.shape[0], surrogates.shape[1]
+    ci_low, ci_high = [], []
+    for ix in range(n_bins):
+        bin =  surrogates[:,ix]
+        mean = np.mean(bin)
+        s = 1.96 * np.std(bin)/np.sqrt(n_surrogates)
+        ci_low.append(mean-s)
+        ci_high.append(mean+s)
+    ci95 = np.vstack([ci_high, ci_low])
+    return ci95 
+
+def compare_hd_histogram_to_surrogates(hd_histogram, surrogates):
     """
     For each bin, compare the actual firing rate to the firing rates determined 
     from shuffling for each. 
     
     Bins in which the firing rate of the real histogram are above the 95% confidence 
     interval of the surrogates are considered significant
-
-
     """
-    n_bins = len(hd_histogram)
-    for ix in range(n_bins):
-        pass
+    
+
+    ci95 = compute_ci95_from_surrogates(surrogates)
+    
 
     
 
-def plot_hd_occupancy_vs_spike_probability_overlay(hd_hist, occupancy_hist, ax = None, figsize = [10,10]):
-    """ Plot overlay of two polar histograms"""
-    if not ax:
-        fig = plt.figure(figsize=figsize)
-        ax = plt.subplot(111, polar = True)
-    
-    
-    hist1 = hist1/sum(hist1)
-    hist2 = hist2/sum(hist2)
-    plot_hd(hist1, ax=ax)
-    plot_hd(hist2, ax=ax)
-    plt.title('Overlay')
-    plt.show()
-    return ax
 
     
 

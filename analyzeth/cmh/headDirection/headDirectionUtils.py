@@ -68,7 +68,7 @@ def get_hd_histogram(degrees, binsize = 1, windowsize=23, smooth = True):
 
 
 
-def compute_hd_occupancy(nwbfile, binsize = 10, smooth = True, windowsize = 23, return_hds = False, return_counts = False):
+def compute_hd_occupancy(nwbfile, binsize = 1, windowsize = 23, smooth = True, return_hds = False, return_counts = False):
     """
     Compute occupancy in seconds for each HD bin during navigation periods
 
@@ -105,16 +105,18 @@ def compute_hd_occupancy(nwbfile, binsize = 10, smooth = True, windowsize = 23, 
     trial_ms = np.arange(np.ceil(session_len))
     navigation_ms = subset_period_event_time_data(trial_ms, navigation_start_times, navigation_end_times)
     hd_ms = get_spike_heading(navigation_ms, hd_times, hd_degrees)
-    print('HDs determined...')
+    print('Occupancy determined...')
 
-    # Compute occupancy for each HD bin in seconds
-    if smooth:
-        print('Smoothing...')
-        occ_counts = get_hd_histogram(hd_ms, binsize, windowsize, smooth)
-    else:
-        _, occ_counts = bin_circular(hd_ms, binsize = binsize)
+    occ_counts = get_hd_histogram(hd_ms, binsize, windowsize, smooth)
+    # # Compute occupancy for each HD bin in seconds
+    # if smooth:
+    #     print('Smoothing...')
+    #     occ_counts = get_hd_histogram(hd_ms, binsize, windowsize, smooth)
+    # else:
+    #     _, occ_counts = bin_circular(hd_ms, binsize = binsize)
+    
     occupancy = occ_counts/1e3  # getting #ms time points in each HD, convert to s by /1e3
-
+    
     if return_hds:
         return occupancy, hd_ms   # return occupancy in seconds, head direction in degrees each ms
     else:

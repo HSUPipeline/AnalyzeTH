@@ -44,14 +44,15 @@ def plot_hd(data, bin_edges = [], ax=None):
     return ax
 
 
-def plot_surrogates_95ci(surrogate_histograms, ax = None):
+def plot_surrogates_95ci(surrogate_histograms, ax = None, binsize = 18):
     """
     Plot polar line, surrogates 95ci 
     """
     if not ax:
         ax = plt.subplot(111, polar = True)
     df = pd.DataFrame(surrogate_histograms).melt()
-    df['variable'] = np.radians(df['variable'])
+    
+    df['variable'] = np.radians(df['variable']*binsize)
     sns.lineplot(data = df, x='variable', y = 'value', estimator=np.mean, ci=95, linewidth=0, color = 'r')
     return ax
 
@@ -192,3 +193,37 @@ def plot_line_hd(nwbfile, unit_ix = None):
         ax.plot(spikes, len(spikes) * [365], 'rv')
 
     return fig, ax
+
+
+def plot_hd_occupancy_vs_spike_probability_overlay(hd_hist, occupancy_hist, ax = None, figsize = [10,10]):
+    """ Plot overlay of two polar histograms"""
+    if not ax:
+        fig = plt.figure(figsize=figsize)
+        ax = plt.subplot(111, polar = True)
+    
+    
+    hist1 = hist1/sum(hist1)
+    hist2 = hist2/sum(hist2)
+    plot_hd(hist1, ax=ax)
+    plot_hd(hist2, ax=ax)
+    plt.title('Overlay')
+    plt.show()
+    return ax
+
+
+def plot_box_hd_vs_shuffle(hd_histogram, surrogate_hd_histograms, ax=None):
+    """
+    Plot box plot of surrogates vs sample HD with 95ci superimposed
+    """
+    if not ax:
+        fig, ax = plt.subplots(figsize=[15,8])
+
+    sns.boxplot(data = np.array(surrogate_hd_histograms), color = 'lightgray', notch= True, saturation=0.5)
+    sns.pointplot(data = np.array(surrogate_hd_histograms), color = 'r', join = False, ci=95)
+    sns.scatterplot(data = hd_histogram, color = 'b', s = 100)
+    xlabels = np.arange(0,360,10)
+    ax.set_xticklabels(xlabels, rotation = 90)
+    ax.set_ylabel('Firing Rate (Hz)')
+    ax.set_xlabel('Degrees')
+    plt.show()
+    return ax
