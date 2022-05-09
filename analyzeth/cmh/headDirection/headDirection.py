@@ -8,8 +8,61 @@ from analyzeth.analysis import get_spike_heading, bin_circular
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
+
+import scipy.stats as st
+import numpy as np
+
+
+
 # spiketools
 from spiketools.stats.shuffle import shuffle_spikes
+
+def nwb_headDirection_session(nwbfile, n_surrogates = 1000, plot=False):
+    """"
+    run and plot for each unit in session
+    """
+    
+    occupancy = compute_hd_occupancy(nwbfile, return_hds = False, smooth = True, windowsize = 23, binsize = 1)
+    
+    n_units = len(nwbfile.units)
+    for unit_ix in range(n_units):
+        print(f'Working on unit {unit_ix}...')
+        nwb_headDirection_cell(nwbfile, unit_ix, occupancy, n_surrogates, plot)
+    return 
+
+
+def nwb_headDirection_cell(nwbfile, unit_ix, occupancy = [], n_surrogates = 1000, plot = False):
+    """
+    Run head direction analysis for unit and compare to surrogates
+    """
+    if occupancy == []:
+        occupancy = compute_hd_occupancy(nwbfile, return_hds = False, smooth = True, windowsize = 23, binsize = 1)
+    hd_hist = nwb_hd_cell_hist(nwbfile, unit_ix)
+    hd_hist_norm = normalize_hd_hist_to_occupancy(hd_hist, occupancy)
+    
+    # Shuffle
+    shuffled_spikes = nwb_shuffle_spikes_bincirc_navigation(nwbfile, unit_ix, n_surrogates, shift_range = [5e3, 20e3], verbose=False)
+    head_direction = nwbfile.acquisition['position']['head_direction']
+    hd_times = head_direction.timestamps[:]
+    hd_degrees = head_direction.data[:]
+    surrogate_hds = get_hd_shuffled_head_directions(shuffled_spikes, hd_times, hd_degrees)
+    surrogate_histograms = get_hd_surrogate_histograms(surrogate_hds)
+    surrogates_norm = normalize_hd_surrogate_histograms_to_occupancy(surrogate_histograms, occupancy)
+
+    if plot:
+        fig = plt.figure(figsize = [10,10])
+        ax = plt.subplot(111, polar=True)
+        plot_hd(hd_hist_norm, ax=ax)
+        plot_surrogates_95ci(surrogates_norm, ax=ax)
+        plt.title('Unit {}'.format(unit_ix))
+        plt.xlabel('')
+        plt.ylabel('')
+        plt.show()
+
+    return
+        
+
 
 def get_hd_spike_headings (nwbfile, unit_ix):
     """
@@ -26,7 +79,7 @@ def get_hd_spike_headings (nwbfile, unit_ix):
     hd_degrees = head_direction.data[:]
 
     # Histogram
-    hd_spikes = get_spike_heading(spikes, hd_times, hd_degrees)
+    hd_spikes = np.array(get_spike_heading(spikes, hd_times, hd_degrees))
 
     return hd_spikes
 
@@ -49,10 +102,7 @@ def nwb_hd_cell_hist(nwbfile, unit_ix = 0, binsize = 1, windowsize = 23,  smooth
 
     # Histogram
     hd_histogram = get_hd_histogram(hd_spikes, binsize, windowsize, smooth)
-    # if smooth:
-    #     hd_hist = get_hd_histogram_smooth(hd_spikes, binsize, windowsize)
-    # else:
-    #     _, hd_hist = bin_circular(hd_spikes, binsize=binsize)
+    
     return hd_histogram
 
 def normalize_hd_hist_to_occupancy(hd_hist, occupancy=[], nwbfile = None, binsize = 1, smooth= True, windowsize = 23):
@@ -147,52 +197,105 @@ def shuffle_spikes_epochs(spikes, epoch_start_times, epoch_stop_times, approach 
         shuffled_spikes_epochs.append(epoch_spikes)
     return shuffled_spikes_epochs
 
-def shuffle_spikes_bincirc_navigation(spikes, navigation_start_times, navigation_end_times, n = 100):
+
+def nwb_shuffle_spikes_bincirc_navigation(nwbfile, unit_ix, n = 100, shift_range = [1e3, 10e3], verbose = False):
     """
-    Shuffle spikes circularly within each navigation period
+    From nwb file, epochs are navigation periods
+    
+    Shuffle spikes circularly within each epoch period
+
+    Maintains total number of spikes across all shuffles
+    """    
+    # Spike data - navigation periods 
+    navigation_start_times = nwbfile.trials['navigation_start'][:]
+    navigation_end_times = nwbfile.trials['navigation_end'][:]
+    spikes = subset_period_event_time_data(nwbfile.units.get_unit_spike_times(unit_ix), navigation_start_times, navigation_end_times)
+    shuffled_spikes = shuffle_spikes_bincirc_epochs(spikes, navigation_start_times, navigation_end_times, n, shift_range, verbose)
+    return shuffled_spikes
+
+
+def shuffle_spikes_bincirc_epochs(spikes, epoch_start_times, epoch_end_times, n = 100, shift_range = [1e3, 10e3], verbose = False):
+    """
+    Shuffle spikes circularly within each epoch period
 
     Maintains total number of spikes across all shuffles
     """
 
     shuffled_spikes = np.zeros([n, len(spikes)])
-    print(shuffled_spikes.shape)
-
     for ix in range(n):
-        shuffle_circ_ammount = np.random.uniform(1e3, 1e4, len(navigation_start_times))                                                      # ammount to circularly shuffle each bin (between 1-10 seconds)
+        shuffle_circ_ammount = np.random.uniform(shift_range[0], shift_range[1], len(epoch_start_times))                                                      # ammount to circularly shuffle each bin (between 1-10 seconds)
+        
+        if verbose:
+            print('Surrogate {} ---- Shuffle circ ammount {}'.format(ix, shuffle_circ_ammount))
         
         shuffled_spikes_n = [] 
-        for le, re, shift in zip(navigation_start_times, navigation_end_times, shuffle_circ_ammount):
+        for le, re, shift in zip(epoch_start_times, epoch_end_times, shuffle_circ_ammount):
+
+
             spikes_bin = spikes[(le < spikes) & (spikes < re)]
-
-            
-
             shuffled_spikes_bin = shuffle_roll_binned_times(spikes_bin, le, re, shift)
             shuffled_spikes_n.append(shuffled_spikes_bin)
 
-        
+            if verbose:
+                print('le, re, shift: \t', le, re, shift)
+                fig, ax = plt.subplots (figsize = [20,10])
+                ax.eventplot([spikes_bin, shuffled_spikes_bin], linelengths = [0.9, 0.9], colors = ['g', 'b'])
+                ax.set_yticks([0,1])
+                ax.set_yticklabels(['Spikes Bin', 'Shuffled Spikes'])
+                plt.show()
+
         shuffled_spikes_n = np.hstack(shuffled_spikes_n)
         shuffled_spikes[ix, :] = shuffled_spikes_n
-
     return shuffled_spikes
 
 def shuffle_roll_binned_times (spikes, left_edge, right_edge, shift):
     """
     Cicularly roll spike times within bin by shift ammount
+   
+    Parameters
+    ----------
+    spikes: 1d arr
+        array of spike times, must be only spikes within epoch n (ie. between left and right edge)
+    
+    left_edge: float
+        time of epoch start
+
+    right_edge: float
+        time of epoch end
+    
+    shift: float
+        amount to shift each spike
+    
+    Returns
+    -------
+    shuffled_spikes: 1d arr
+        array containing the same number of spikes as original, circlarly shifted in time around the bin 
     """
 
-    # Subset spikes if not already
-    spikes = spikes[(left_edge <= spikes) & (spikes <= right_edge)]
-
     # Circular time shuffle
-    shuffled_temp =  spikes + shift
-    shuffled_within_bin = shuffled_temp[shuffled_temp < right_edge]
-    shuffled_right = shuffled_temp[right_edge <= shuffled_temp]
-    shuffled_right -= right_edge
-    shuffled_right += left_edge
+    shifted =  spikes + shift
+    within_bin, right = shifted[shifted < right_edge],shifted[right_edge <= shifted]
+    binsize = right_edge - left_edge
+    rolled = right - binsize
 
     # Combine rolled spike times
-    shuffled_spikes = np.hstack([shuffled_right, shuffled_within_bin])
+    shuffled_spikes = np.sort(np.hstack([rolled, within_bin]))
 
+    
+        # print('le, re, shift: \t', left_edge, right_edge, shift)
+        # fig, ax = plt.subplots (figsize = [10,8])
+        # ax.eventplot(shuffled_spikes)
+        # ax.vlines([left_edge, right_edge], -1, 1,linestyles='dashed')
+        # plt.show()
+
+    # check and fix if any are still ouside bin (i.e. due to shift larger than epoch size)
+    if len(shuffled_spikes[right_edge <= shuffled_spikes]) > 0:
+        shuffled_spikes = shuffle_roll_binned_times(shuffled_spikes, left_edge, right_edge, 0)
+            # print ('after reroll')
+            # fig, ax = plt.subplots (figsize = [10,8])
+            # ax.eventplot(shuffled_spikes)
+            # ax.vlines([left_edge, right_edge], -1, 1,linestyles='dashed')
+            # plt.show()
     return shuffled_spikes
 
 
@@ -210,28 +313,60 @@ def get_hd_surrogate_histograms(shuffled_head_directions, binsize = 1, windowsiz
     """"
     get histograms for each surrogate
     """
-    surrogate_histograms = np.zeros(len(shuffled_head_directions), 360/binsize)
-    for ix, surrogate in shuffled_head_directions:
+    surrogate_histograms = np.zeros([len(shuffled_head_directions), int(360/binsize)])
+    for ix, surrogate in enumerate(shuffled_head_directions):
         hist = get_hd_histogram(surrogate, binsize, windowsize, smooth)
         surrogate_histograms[ix,:] = hist
     return surrogate_histograms
 
-def normalize_hd_surrogates_to_occupancy (shuffled_head_directions, occpancy):
+def normalize_hd_surrogate_histograms_to_occupancy (surrogate_histograms, occupancy=[], 
+                                                    nwbfile = None, binsize = 1, smooth= True, windowsize = 23):
     """
-    Normalize each surrogate to occupancy as with original data
+    this is the same as the 1d version, can scrap
     """
-    normalized_histograms = 
-    for surrogate in  shuffled_head_directions:
-        
-
-def compute_hd_shuffle_rayleigh(shuffled_head_directions):
-    pvals, zvals = [], []
-
-    for surrogate in shuffled_head_directions:
-
-
+    # Occupancy - seconds per bin
+    if occupancy == []:
+        occupancy = compute_hd_occupancy(nwbfile, binsize, smooth, windowsize)
     
+    normalized_histograms = surrogate_histograms / occupancy
+    return normalized_histograms
+    
+
+# def compute_hd_shuffle_rayleigh(shuffled_head_directions):
+#     pvals, zvals = [], []
+
+#     for surrogate in shuffled_head_directions:
+
+
+def get_probability_histogram_from_hd_histogram(hd_histogram):
+    """
+    Turn normalized histogram of firing rates in each direction into a probability map of
+    firing in each direction.
+
+    This can then be used to ...
+    """
+    #this can be done with one hist or 2d array of hists
+    probability_histogram = hd_histogram / sum(hd_histogram.T) 
+    return probability_histogram
         
+
+
+def compute_95ci_from_surrogates(surrogate_histograms):
+    return
+
+def compare_hd_histogram_to_surrogates(hd_histogram, surrogate_histograms):
+    """
+    For each bin, compare the actual firing rate to the firing rates determined 
+    from shuffling for each. 
+    
+    Bins in which the firing rate of the real histogram are above the 95% confidence 
+    interval of the surrogates are considered significant
+
+
+    """
+    n_bins = len(hd_histogram)
+    for ix in range(n_bins):
+        pass
 
     
 
