@@ -1,6 +1,7 @@
 
 from matplotlib import style
 import numpy as np
+import pandas as pd
 from pingouin import convert_angles, circ_rayleigh
 
 from analyzeth.cmh.utils.subset_data import subset_period_event_time_data, subset_period_data
@@ -40,9 +41,20 @@ def plot_hd(data, bin_edges = [], ax=None):
     #rad_edges = np.radians(bin_edges)
     #for xcoord in bin_edges:
     #    plt.axvline(x=xcoord, linestyle= '--')
-
-
     return ax
+
+
+def plot_surrogates_95ci(surrogate_histograms, ax = None):
+    """
+    Plot polar line, surrogates 95ci 
+    """
+    if not ax:
+        ax = plt.subplot(111, polar = True)
+    df = pd.DataFrame(surrogate_histograms).melt()
+    df['variable'] = np.radians(df['variable'])
+    sns.lineplot(data = df, x='variable', y = 'value', estimator=np.mean, ci=95, linewidth=0, color = 'r')
+    return ax
+
 
 def plot_polar_hist_overlay_surrs(hd_degrees, mean_shuffle_hd_counts, ax=None):
     """Plot a polar histogram.

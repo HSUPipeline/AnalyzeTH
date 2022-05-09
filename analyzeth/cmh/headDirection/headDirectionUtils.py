@@ -110,7 +110,7 @@ def compute_hd_occupancy(nwbfile, binsize = 10, smooth = True, windowsize = 23, 
     # Compute occupancy for each HD bin in seconds
     if smooth:
         print('Smoothing...')
-        occ_counts = get_hd_histogram_smooth(hd_ms, binsize, windowsize)
+        occ_counts = get_hd_histogram(hd_ms, binsize, windowsize, smooth)
     else:
         _, occ_counts = bin_circular(hd_ms, binsize = binsize)
     occupancy = occ_counts/1e3  # getting #ms time points in each HD, convert to s by /1e3
