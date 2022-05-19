@@ -44,14 +44,17 @@ def plot_hd(data, bin_edges = [], ax=None):
     return ax
 
 
-def plot_surrogates_95ci(surrogate_histograms, ax = None, binsize = 18):
+def plot_surrogates_95ci(surrogate_histograms, ax = None):
     """
     Plot polar line, surrogates 95ci 
     """
     if not ax:
         ax = plt.subplot(111, polar = True)
-    df = pd.DataFrame(surrogate_histograms).melt()
     
+    binsize = surrogate_histograms.shape[1] / 360
+    print(f'binsize = {binsize}')
+    
+    df = pd.DataFrame(surrogate_histograms).melt()
     df['variable'] = np.radians(df['variable']*binsize)
     sns.lineplot(data = df, x='variable', y = 'value', estimator=np.mean, ci=95, linewidth=0, color = 'r')
     return ax

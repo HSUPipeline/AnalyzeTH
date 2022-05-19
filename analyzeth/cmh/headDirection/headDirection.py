@@ -88,7 +88,7 @@ def nwb_headDirection_cell(nwbfile, unit_ix,
         'hd_histogram'              : hd_hist,
         'hd_histogram_norm'         : hd_hist_norm,
         'surrogate_histograms'      : surrogate_histograms,
-        'surrogate_histogams_norm'  : surrogates_norm,
+        'surrogate_histograms_norm'  : surrogates_norm,
         'surrogates_ci95'           : surrogates_ci95
     }
     return res
@@ -405,6 +405,20 @@ def compute_ci95_from_surrogates(surrogates):
         ci_high.append(mean+s)
     ci95 = np.vstack([ci_high, ci_low])
     return ci95 
+
+def compute_bootstrap_ci95_from_surrogates(surrogates):
+    """
+    Compute ci95 from surrogates using seaborn bootstrapping method
+    """
+
+    num_bins = surrogates.shape[1]
+    bisize = 360 / num_bins
+    df = pd.DataFrame(surrogates).melt()
+
+
+    df['variable'] = np.radians(df['variable']*binsize)
+    #ax = sns.lineplot
+
 
 def compare_hd_histogram_to_surrogates(hd_histogram, surrogates):
     """
