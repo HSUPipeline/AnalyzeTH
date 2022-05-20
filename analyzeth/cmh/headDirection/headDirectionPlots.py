@@ -56,9 +56,61 @@ def plot_surrogates_95ci(surrogate_histograms, ax = None):
     
     df = pd.DataFrame(surrogate_histograms).melt()
     df['variable'] = np.radians(df['variable']*binsize)
-    sns.lineplot(data = df, x='variable', y = 'value', estimator=np.mean, ci=95, linewidth=0, color = 'r')
+    sns.lineplot(data = df, x='variable', y = 'value', estimator=np.mean, ci=95, linewidth=0, color = 'r', alpha = 0.9)
     return ax
 
+def plot_significant_bin_asterisks(significant_bins, asterisk_y = 5, ax = None):
+    """
+    add asterisks to plot for bins deemed significant (above ci95 for 10 bin stretch)
+    """
+    if ax == None:
+        ax = plt.subplot(111, polar = True)
+
+    sig_asterisks = significant_bins * asterisk_y
+    sig_asterisks[sig_asterisks == 0] = np.nan
+    x = np.radians(np.arange(0,360,1))
+    sns.scatterplot(x=x, y = sig_asterisks, color = 'k')
+    return ax
+
+def plot_hd_full(hd_histogram, surrogates_ci95, significant_bins, surrogates = None, ax = None, title = ''):
+    """
+    Plot complete hd polar diagram with 95% confidence interval and significance
+    asterisks
+    """
+    if not ax:
+        fig = plt.figure(figsize = [10,10])
+        ax = plt.subplot(111,polar=True)
+    
+    # Plot hd hist and ci95
+    plot_hd(hd_histogram, ax = ax)
+    
+    # Plot ci95 - using mine rather than sns default for looks
+        #plot_surrogates_95ci(surrogates, ax = ax)
+    num_bins = len(hd_histogram)
+    binsize = 360 / num_bins
+    print('numbins', num_bins)
+    x = np.radians(np.arange(0,num_bins, binsize))
+    
+    print('lenx', len(x))
+    print('ci95', surrogates_ci95.shape) 
+
+
+
+    sns.lineplot(x = x, y = surrogates_ci95[:,0], color='y')
+    sns.lineplot(x=x, y = surrogates_ci95[:,1],color='g')
+    
+    # Plot significance markers
+    max_fr = max(hd_histogram)
+    asterisk_y = max_fr + 0.25*max_fr
+    plot_significant_bin_asterisks(significant_bins, asterisk_y, ax = ax)
+
+    # Formatting
+    plt.title(title)
+    plt.xlabel('')
+    plt.ylabel('')
+    plt.show()
+
+    return ax
 
 def plot_polar_hist_overlay_surrs(hd_degrees, mean_shuffle_hd_counts, ax=None):
     """Plot a polar histogram.
@@ -82,13 +134,11 @@ def plot_polar_hist_overlay_surrs(hd_degrees, mean_shuffle_hd_counts, ax=None):
     return ax
 
 
-
-
 def plot_hd_raster(
         nwbfile = None, 
         unit_ix = SETTINGS.UNIT_IX,
         ax = None,
-        highlight = 'trial'
+        highlight = 'navigation'
         ):
     
     # -- LOAD -- 
@@ -229,4 +279,28 @@ def plot_box_hd_vs_shuffle(hd_histogram, surrogate_hd_histograms, ax=None):
     ax.set_ylabel('Firing Rate (Hz)')
     ax.set_xlabel('Degrees')
     plt.show()
+    return ax
+
+
+def plot_bootstrap_replicates_PDF_hist(bootstrap_replicates, bins=30, density=1, ax = None):
+    """
+    Plot probability density function for bootstraps showing 95% confidence interval
+    """
+    # if ax == None:
+    #     ax = plt.subplots(111)
+
+    # Plot the PDF for bootstrap replicates as histogram
+    plt.hist(bootstrap_replicates,bins=30,density=1, stacked=True)
+    
+    # Showing the related percentiles
+    plt.axvline(x=np.percentile(bootstrap_replicates,[2.5]), ymin=0, ymax=1,label='2.5th percentile',c='y')
+    plt.axvline(x=np.percentile(bootstrap_replicates,[97.5]), ymin=0, ymax=1,label='97.5th percentile',c='r')
+    
+    # Formatting
+    plt.xlabel("Hz")
+    plt.ylabel("PDF")
+    plt.title("Probability Density Function")
+    plt.legend()
+    plt.show()
+
     return ax

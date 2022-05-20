@@ -1,5 +1,6 @@
 
 from random import shuffle
+from analyzeth.cmh.headDirection.headDirectionStats import bootstrap_ci_from_surrogates, compute_significant_bins
 from analyzeth.cmh.utils import *
 from analyzeth.cmh.headDirection.headDirectionUtils import *
 from analyzeth.cmh.headDirection.headDirectionPlots import *
@@ -18,7 +19,7 @@ import numpy as np
 # spiketools
 from spiketools.stats.shuffle import shuffle_spikes
 
-def nwb_headDirection_session(nwbfile, n_surrogates = 1000, plot=False):
+def nwb_headDirection_session(nwbfile, n_surrogates = 1000, plot=False, subject='wv___'):
     """"
     run and plot for each unit in session
     """
@@ -35,7 +36,7 @@ def nwb_headDirection_session(nwbfile, n_surrogates = 1000, plot=False):
     n_units = len(nwbfile.units)
     for unit_ix in range(n_units):
         print(f'Working on unit {unit_ix}...')
-        nwb_headDirection_cell(nwbfile, unit_ix, occupancy, n_surrogates, plot)
+        nwb_headDirection_cell(nwbfile, unit_ix, occupancy, n_surrogates, plot = True, subject=subject)
     return 
 
 
@@ -45,7 +46,8 @@ def nwb_headDirection_cell(nwbfile, unit_ix,
         binsize = 1, 
         windowsize = 23, 
         smooth = True, 
-        plot = False
+        plot = False,
+        subject = 'wv____'
         ):
     """
     Run head direction analysis for unit and compare to surrogates
@@ -69,27 +71,37 @@ def nwb_headDirection_cell(nwbfile, unit_ix,
     surrogate_hds = get_hd_shuffled_head_directions(shuffled_spikes, hd_times, hd_degrees)
     surrogate_histograms = get_hd_surrogate_histograms(surrogate_hds, binsize, windowsize, smooth)
     surrogates_norm = normalize_hd_surrogate_histograms_to_occupancy(surrogate_histograms, occupancy)
-    surrogates_ci95 = compute_ci95_from_surrogates(surrogates_norm)
+    #surrogates_ci95 = compute_std_ci95_from_surrogates(surrogates_norm)
+    surrogates_ci95 = bootstrap_ci_from_surrogates(surrogates_norm)
+    significant_bins = compute_significant_bins(hd_hist_norm, surrogates_ci95)
 
+    print('inside hd func, surci95 size', surrogates_ci95.shape)
 
     if plot:
-        fig = plt.figure(figsize = [10,10])
-        ax = plt.subplot(111, polar=True)
-        plot_hd(hd_hist_norm, ax=ax)
-        plot_surrogates_95ci(surrogates_norm, ax=ax)
-        plt.title('Unit {}'.format(unit_ix))
-        plt.xlabel('')
-        plt.ylabel('')
-        plt.show()
+        title = subject + f' | Unit {unit_ix}'
+        hd_ax = plot_hd_full(hd_hist_norm, surrogates_ci95, significant_bins)
+        # fig = plt.figure(figsize = [10,10])
+        # ax = plt.subplot(111, polar=True)
+        # plot_hd(hd_hist_norm, ax=ax)
+        # plot_surrogates_95ci(surrogates_norm, ax=ax)
+        # plt.title('Unit {}'.format(unit_ix))
+        # plt.xlabel('')
+        # plt.ylabel('')
+        # plt.show()
 
     res = {
         'hd_score'                  : hd_score,
         'hd_score_norm'             : hd_norm_score,
         'hd_histogram'              : hd_hist,
         'hd_histogram_norm'         : hd_hist_norm,
+
+        'surrogate_hds'             : surrogate_hds,
         'surrogate_histograms'      : surrogate_histograms,
-        'surrogate_histograms_norm'  : surrogates_norm,
-        'surrogates_ci95'           : surrogates_ci95
+        'surrogate_histograms_norm' : surrogates_norm,
+        'surrogates_ci95'           : surrogates_ci95,
+        'significant_bins'          : significant_bins,
+
+        'hd_plot'                   : hd_ax
     }
     return res
         
@@ -391,7 +403,7 @@ def get_probability_histogram_from_hd_histogram(hd_histogram):
 
 
 
-def compute_ci95_from_surrogates(surrogates):
+def compute_std_ci95_from_surrogates(surrogates):
     """
     For each bin compute the ci95, return as 2d array high over low for each bin
     """
