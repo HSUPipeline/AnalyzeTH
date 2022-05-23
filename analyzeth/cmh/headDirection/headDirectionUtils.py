@@ -33,6 +33,83 @@ import math
 
 #     return bin_edges, counts
 
+
+
+def get_hd_spike_headings (nwbfile, unit_ix):
+    """
+    Get spike headings in degrees during navigation periods
+    """
+    # Spike data - navigation periods 
+    navigation_start_times = nwbfile.trials['navigation_start'][:]
+    navigation_end_times = nwbfile.trials['navigation_end'][:]
+    spikes = subset_period_event_time_data(nwbfile.units.get_unit_spike_times(unit_ix), navigation_start_times, navigation_end_times)
+
+    # Head Direction data 
+    head_direction = nwbfile.acquisition['position']['head_direction']
+    hd_times = head_direction.timestamps[:]
+    hd_degrees = head_direction.data[:]
+
+    # Histogram
+    hd_spikes = np.array(get_spike_heading(spikes, hd_times, hd_degrees))
+
+    return hd_spikes
+
+
+def nwb_hd_cell_hist(nwbfile, unit_ix = 0, binsize = 1, windowsize = 23,  smooth = True):
+    """ 
+    Get head direction histogram 
+    """
+    # Spike data - navigation periods 
+    navigation_start_times = nwbfile.trials['navigation_start'][:]
+    navigation_end_times = nwbfile.trials['navigation_end'][:]
+    spikes = subset_period_event_time_data(nwbfile.units.get_unit_spike_times(unit_ix), navigation_start_times, navigation_end_times)
+
+    # Head Direction data 
+    head_direction = nwbfile.acquisition['position']['head_direction']
+    hd_times = head_direction.timestamps[:]
+    hd_degrees = head_direction.data[:]
+    hd_spikes = get_spike_heading(spikes, hd_times, hd_degrees)
+
+    # Histogram
+    hd_histogram = get_hd_histogram(hd_spikes, binsize, windowsize, smooth)
+
+    return hd_histogram
+
+def normalize_hd_hist_to_occupancy(hd_hist, occupancy=[], nwbfile = None, binsize = 1, smooth= True, windowsize = 23):
+    """
+    Normalize histogram or set of histograms to occpancy. Occupancy is seconds spent in each bin, thus
+    this generates a psuedo firing rate in Hz per bin
+    """
+    # Occupancy - seconds per bin
+    if occupancy == []:
+        occupancy = compute_hd_occupancy(nwbfile, binsize, smooth, windowsize)
+    hd_firingRate =  hd_hist/ occupancy
+    return hd_firingRate
+
+def compute_hd_score(hd_hist):
+    """
+    Compute head direction score based on method from Gerlei 2020
+
+    HD score should be >= 0.5 to be hd cell
+
+    """
+    n_bins = len(hd_hist)
+    binsize = 360/n_bins
+    degs = np.arange(0, 360, binsize)
+    rads = np.radians(degs)
+    dy = np.sin(rads)
+    dx = np.cos(rads)
+    xtotal = sum(dx * hd_hist)/sum(hd_hist)
+    ytotal = sum(dy * hd_hist)/sum(hd_hist)
+    hd_score = np.sqrt(xtotal**2 + ytotal**2)
+
+    return hd_score
+
+
+#########################################
+# Smooth HD Histograms
+#########################################
+
 # Modified from MNL
 def moving_sum(array, window):
     ret = np.cumsum(array, dtype=float)
@@ -67,6 +144,9 @@ def get_hd_histogram(degrees, binsize = 1, windowsize=23, smooth = True):
         return binned_hd
 
 
+#########################################
+# Occupancy
+#########################################
 
 def compute_hd_occupancy(nwbfile, binsize = 1, windowsize = 23, smooth = True, return_hds = False, return_counts = False):
     """
