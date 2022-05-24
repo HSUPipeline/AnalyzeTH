@@ -1,7 +1,7 @@
 import numpy as np
 
 def cell_firing_rate(
-        spikes,         #sec  
+        spikes,       #sec  
         len_epoch, 
         window = 1,   #sec
         step = 0.1    #sec 
