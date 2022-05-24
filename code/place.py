@@ -7,7 +7,8 @@ import numpy as np
 
 from spiketools.stats.anova import create_dataframe, fit_anova
 from spiketools.spatial.occupancy import (compute_nbins, compute_bin_assignment,
-                                          compute_bin_firing, compute_occupancy)
+                                          compute_bin_firing, normalize_bin_firing,
+                                          compute_occupancy)
 from spiketools.utils.data import restrict_range, get_value_by_time_range
 
 # import local code
@@ -28,8 +29,7 @@ fit_anova_place = partial(fit_anova, formula=MODEL, feature=FEATURE)
 ###################################################################################################
 ###################################################################################################
 
-def compute_place_bins(spikes, bins, ptimes, positions, speed,
-                       x_edges=None, y_edges=None, **occ_kwargs):
+def compute_place_bins(spikes, bins, ptimes, positions, x_edges=None, y_edges=None, occ=None):
     """Compute the binned firing rate based on player position."""
 
     spike_xs, spike_ys = get_spike_positions(spikes, ptimes, positions)
@@ -38,13 +38,10 @@ def compute_place_bins(spikes, bins, ptimes, positions, speed,
     x_binl, y_binl = compute_bin_assignment(spike_positions, x_edges, y_edges)
     bin_firing = compute_bin_firing(bins, x_binl, y_binl)
 
-    occ = compute_occupancy(positions, ptimes, bins, speed, **occ_kwargs)
+    if occ is not None:
+        bin_firing = normalize_bin_firing(bin_firing, occ)
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        normed_bin_firing = bin_firing / occ
-
-    return normed_bin_firing
+    return bin_firing
 
 
 def get_trial_place(spikes, trials, bins, ptimes, positions, speed,
