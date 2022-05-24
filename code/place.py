@@ -6,7 +6,7 @@ from functools import partial
 import numpy as np
 
 from spiketools.stats.anova import create_dataframe, fit_anova
-from spiketools.spatial.occupancy import (compute_nbins, compute_spatial_bin_assignment,
+from spiketools.spatial.occupancy import (compute_nbins, compute_bin_assignment,
                                           compute_bin_firing, compute_occupancy)
 from spiketools.utils.data import restrict_range, get_value_by_time_range
 
@@ -35,7 +35,7 @@ def compute_place_bins(spikes, bins, ptimes, positions, speed,
     spike_xs, spike_ys = get_spike_positions(spikes, ptimes, positions)
     spike_positions = np.array([spike_xs, spike_ys])
 
-    x_binl, y_binl = compute_spatial_bin_assignment(spike_positions, x_edges, y_edges)
+    x_binl, y_binl = compute_bin_assignment(spike_positions, x_edges, y_edges)
     bin_firing = compute_bin_firing(bins, x_binl, y_binl)
 
     occ = compute_occupancy(positions, ptimes, bins, speed, **occ_kwargs)
@@ -67,7 +67,7 @@ def get_trial_place(spikes, trials, bins, ptimes, positions, speed,
         t_spike_pos = np.array([t_spike_pos_x, t_spike_pos_y])
 
         # Compute spatial bin assignments for each spike & compute occupancy
-        xt_bin, yt_bin = compute_spatial_bin_assignment(t_spike_pos, x_edges, y_edges)
+        xt_bin, yt_bin = compute_bin_assignment(t_spike_pos, x_edges, y_edges)
         tocc = compute_occupancy(t_pos, t_times, bins, t_speed, **occ_kwargs)
 
         # Compute and collect binned firing per trial
