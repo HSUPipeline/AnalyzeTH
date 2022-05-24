@@ -151,21 +151,21 @@ def plot_hd_raster(
     
 
     # -- TRIAL DATA -- 
-    trial_starts = (nwbfile.trials['start_time'].data[:])/1e3       #convert to trial time in s
-    trial_ends = (nwbfile.trials['stop_time'].data[:])/1e3          #convert to trial time in s
+    trial_starts = (nwbfile.trials['start_time'].data[:])   #/1e3       #convert to trial time in s
+    trial_ends = (nwbfile.trials['stop_time'].data[:])  #/1e3          #convert to trial time in s
 
     # -- NAVIGATION DATA --
-    navigation_start_times = nwbfile.trials['navigation_start'][:]/1e3
-    navigation_end_times = nwbfile.trials['navigation_end'][:]/1e3
+    navigation_start_times = nwbfile.trials['navigation_start'][:]  #/1e3
+    navigation_stop_times = nwbfile.trials['navigation_stop'][:]    #/1e3
     
     # -- SPIKE DATA --
     spikes = nwbfile.units.get_unit_spike_times(unit_ix)                            #get spikes in ms
     spikes = restrict_range(spikes, session_start, session_end)
-    spikes = (spikes)/1e3                                          #convert to trial time in s  
+    spikes = (spikes)   #/1e3                                          #convert to trial time in s  
 
     # -- HEAD DIRECTION DATA --
     head_direction = nwbfile.acquisition['position']['head_direction']
-    hd_times = (head_direction.timestamps[:])/1e3                   #convert to trial time in s
+    hd_times = (head_direction.timestamps[:])   #/1e3                   #convert to trial time in s
 
 
     # -- PLOT --
@@ -181,7 +181,7 @@ def plot_hd_raster(
 
     else:
         for ix in range(len(navigation_start_times)):
-            ax.axvspan(navigation_start_times[ix], navigation_end_times[ix], alpha=0.2, facecolor=colors[ix])
+            ax.axvspan(navigation_start_times[ix], navigation_stop_times[ix], alpha=0.2, facecolor=colors[ix])
 
     # Add events
     ax.eventplot([spikes, hd_times], linelengths = [0.9, 0.9], colors = ['g', 'b'])
@@ -200,17 +200,17 @@ def plot_hd_raster(
 def plot_line_hd_navigation(nwbfile):
     
     # Navigation period data
-    navigation_start_times = nwbfile.trials['navigation_start'][:]/1e3
-    navigation_end_times = nwbfile.trials['navigation_end'][:]/1e3
+    navigation_start_times = nwbfile.trials['navigation_start'][:]  #/1e3
+    navigation_stop_times = nwbfile.trials['navigation_stop'][:]    #/1e3
 
     # Head direction data
     head_direction = nwbfile.acquisition['position']['head_direction']
-    hd_times = head_direction.timestamps[:] / 1e3    
+    hd_times = head_direction.timestamps[:]     #/ 1e3    
     hd_degrees = head_direction.data[:]
     
     # Get nav data
-    hd_times_nav = subset_period_event_time_data(hd_times, navigation_start_times, navigation_end_times)
-    hd_degrees_nav = subset_period_data(hd_degrees, hd_times, navigation_start_times, navigation_end_times)
+    hd_times_nav = subset_period_event_time_data(hd_times, navigation_start_times, navigation_stop_times)
+    hd_degrees_nav = subset_period_data(hd_degrees, hd_times, navigation_start_times, navigation_stop_times)
 
     # Plot
     fig, ax = plt.subplots(figsize = [14, 5])
@@ -221,12 +221,12 @@ def plot_line_hd_navigation(nwbfile):
 def plot_line_hd(nwbfile, unit_ix = None):
     
     # Navigation period data
-    navigation_start_times = nwbfile.trials['navigation_start'][:]/1e3
-    navigation_end_times = nwbfile.trials['navigation_end'][:]/1e3
+    navigation_start_times = nwbfile.trials['navigation_start'][:]  #/1e3
+    navigation_stop_times = nwbfile.trials['navigation_stop'][:]    #/1e3
 
     # Head direction data
     head_direction = nwbfile.acquisition['position']['head_direction']
-    hd_times = head_direction.timestamps[:] / 1e3    
+    hd_times = head_direction.timestamps[:]     #/ 1e3    
     hd_degrees = head_direction.data[:]
 
     # -- PLOT --
@@ -235,14 +235,14 @@ def plot_line_hd(nwbfile, unit_ix = None):
     # plot navigation periods
     colors = ['r','y','b'] * 10
     for ix in range(len(navigation_start_times)):
-            ax.axvspan(navigation_start_times[ix], navigation_end_times[ix], alpha=0.2, facecolor=colors[ix])
+            ax.axvspan(navigation_start_times[ix], navigation_stop_times[ix], alpha=0.2, facecolor=colors[ix])
 
     # plot hd
     ax.plot(hd_times, hd_degrees, marker ='o', markerfacecolor='g', markeredgecolor='g')
     #ax.scatter(hd_times, hd_degrees)
 
     if unit_ix != None:
-        spikes = nwbfile.units.get_unit_spike_times(unit_ix) / 1e3
+        spikes = nwbfile.units.get_unit_spike_times(unit_ix)    #/ 1e3
         ax.plot(spikes, len(spikes) * [365], 'rv')
 
     return fig, ax

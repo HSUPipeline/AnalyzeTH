@@ -9,7 +9,9 @@
 
 
 from analyzeth.cmh.utils import *
-from analyzeth.cmh.headDirection import * 
+from analyzeth.cmh.headDirection.headDirectionPlots import * 
+from analyzeth.cmh.headDirection.headDirectionUtils import * 
+from analyzeth.cmh.headDirection.headDirectionStats import * 
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -52,11 +54,14 @@ def nwb_headDirection_cell(nwbfile, unit_ix,
         windowsize = 23, 
         smooth = True, 
         plot = False,
-        subject = 'wv____'
         ):
     """
     Run head direction analysis for unit and compare to surrogates
     """
+    # Metadata
+    subject = nwbfile.subject.subject_id
+    session_id = nwbfile.session_id
+    #firing_rate_over_ms 
 
     # Occupancy
     if occupancy == []:
@@ -69,30 +74,23 @@ def nwb_headDirection_cell(nwbfile, unit_ix,
     hd_norm_score = compute_hd_score(hd_hist)
 
     # Shuffle
-    shuffled_spikes = nwb_shuffle_spikes_bincirc_navigation(nwbfile, unit_ix, n_surrogates, shift_range = [5e3, 20e3], verbose=False)
-    head_direction = nwbfile.acquisition['position']['head_direction']
+    shuffled_spikes = nwb_shuffle_spikes_bincirc_navigation(nwbfile, unit_ix, n_surrogates, shift_range = [5, 20], verbose=False)
+    head_direction = nwbfile.acquisition['heading']['direction']
     hd_times = head_direction.timestamps[:]
     hd_degrees = head_direction.data[:]
     surrogate_hds = get_hd_shuffled_head_directions(shuffled_spikes, hd_times, hd_degrees)
     surrogate_histograms = get_hd_surrogate_histograms(surrogate_hds, binsize, windowsize, smooth)
     surrogates_norm = normalize_hd_surrogate_histograms_to_occupancy(surrogate_histograms, occupancy)
-    #surrogates_ci95 = compute_std_ci95_from_surrogates(surrogates_norm)
-    surrogates_ci95 = bootstrap_ci_from_surrogates(surrogates_norm)
+    surrogates_ci95 = bootstrap_ci_from_surrogates(surrogates_norm)                                                                          #surrogates_ci95 = compute_std_ci95_from_surrogates(surrogates_norm)
     significant_bins = compute_significant_bins(hd_hist_norm, surrogates_ci95)
 
     print('inside hd func, surci95 size', surrogates_ci95.shape)
 
     if plot:
-        title = subject + f' | Unit {unit_ix}'
+        title = session_id + f' | Unit {unit_ix}'
         hd_ax = plot_hd_full(hd_hist_norm, surrogates_ci95, significant_bins)
-        # fig = plt.figure(figsize = [10,10])
-        # ax = plt.subplot(111, polar=True)
-        # plot_hd(hd_hist_norm, ax=ax)
-        # plot_surrogates_95ci(surrogates_norm, ax=ax)
-        # plt.title('Unit {}'.format(unit_ix))
-        # plt.xlabel('')
-        # plt.ylabel('')
-        # plt.show()
+
+
 
     res = {
         'hd_score'                  : hd_score,
@@ -111,7 +109,19 @@ def nwb_headDirection_cell(nwbfile, unit_ix,
     return res
         
 
+######################
+# Reports
+######################
 
+def headDirection_report(nwbfile, unit_ix):
+    """
+    Generate single page PDF report for unit
+    """
+
+    # Get metadata
+
+
+    print (f'Analyzing Subject')
 
 
 

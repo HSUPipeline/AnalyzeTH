@@ -46,8 +46,8 @@ def shuffle_spikes_navigation(nwbfile, unit_ix, approach = 'ISI', n = 100):
     """
     spikes = nwbfile.units.get_unit_spike_times(unit_ix)
     navigation_start_times = nwbfile.trials['navigation_start'][:]
-    navigation_end_times = nwbfile.trials['navigation_end'][:]
-    shuffled_spikes = shuffle_spikes_epochs(spikes, navigation_start_times, navigation_end_times, approach, n)           
+    navigation_stop_times = nwbfile.trials['navigation_stop'][:]
+    shuffled_spikes = shuffle_spikes_epochs(spikes, navigation_start_times, navigation_stop_times, approach, n)           
     return shuffled_spikes  
 
 def shuffle_spikes_epochs(spikes, epoch_start_times, epoch_stop_times, approach = 'ISI', n = 100):
@@ -97,7 +97,7 @@ def shuffle_spikes_epochs(spikes, epoch_start_times, epoch_stop_times, approach 
     return shuffled_spikes_epochs
 
 
-def nwb_shuffle_spikes_bincirc_navigation(nwbfile, unit_ix, n = 100, shift_range = [1e3, 10e3], verbose = False):
+def nwb_shuffle_spikes_bincirc_navigation(nwbfile, unit_ix, n = 100, shift_range = [1, 10], verbose = False):
     """
     From nwb file, epochs are navigation periods
     
@@ -107,13 +107,13 @@ def nwb_shuffle_spikes_bincirc_navigation(nwbfile, unit_ix, n = 100, shift_range
     """    
     # Spike data - navigation periods 
     navigation_start_times = nwbfile.trials['navigation_start'][:]
-    navigation_end_times = nwbfile.trials['navigation_end'][:]
-    spikes = subset_period_event_time_data(nwbfile.units.get_unit_spike_times(unit_ix), navigation_start_times, navigation_end_times)
-    shuffled_spikes = shuffle_spikes_bincirc_epochs(spikes, navigation_start_times, navigation_end_times, n, shift_range, verbose)
+    navigation_stop_times = nwbfile.trials['navigation_stop'][:]
+    spikes = subset_period_event_time_data(nwbfile.units.get_unit_spike_times(unit_ix), navigation_start_times, navigation_stop_times)
+    shuffled_spikes = shuffle_spikes_bincirc_epochs(spikes, navigation_start_times, navigation_stop_times, n, shift_range, verbose)
     return shuffled_spikes
 
 
-def shuffle_spikes_bincirc_epochs(spikes, epoch_start_times, epoch_end_times, n = 100, shift_range = [1e3, 10e3], verbose = False):
+def shuffle_spikes_bincirc_epochs(spikes, epoch_start_times, epoch_end_times, n = 100, shift_range = [1, 10], verbose = False):
     """
     Shuffle spikes circularly within each epoch period
 

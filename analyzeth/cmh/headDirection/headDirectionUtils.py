@@ -41,11 +41,11 @@ def get_hd_spike_headings (nwbfile, unit_ix):
     """
     # Spike data - navigation periods 
     navigation_start_times = nwbfile.trials['navigation_start'][:]
-    navigation_end_times = nwbfile.trials['navigation_end'][:]
-    spikes = subset_period_event_time_data(nwbfile.units.get_unit_spike_times(unit_ix), navigation_start_times, navigation_end_times)
+    navigation_stop_times = nwbfile.trials['navigation_stop'][:]
+    spikes = subset_period_event_time_data(nwbfile.units.get_unit_spike_times(unit_ix), navigation_start_times, navigation_stop_times)
 
     # Head Direction data 
-    head_direction = nwbfile.acquisition['position']['head_direction']
+    head_direction = nwbfile.acquisition['heading']['direction']
     hd_times = head_direction.timestamps[:]
     hd_degrees = head_direction.data[:]
 
@@ -61,11 +61,11 @@ def nwb_hd_cell_hist(nwbfile, unit_ix = 0, binsize = 1, windowsize = 23,  smooth
     """
     # Spike data - navigation periods 
     navigation_start_times = nwbfile.trials['navigation_start'][:]
-    navigation_end_times = nwbfile.trials['navigation_end'][:]
-    spikes = subset_period_event_time_data(nwbfile.units.get_unit_spike_times(unit_ix), navigation_start_times, navigation_end_times)
+    navigation_stop_times = nwbfile.trials['navigation_stop'][:]
+    spikes = subset_period_event_time_data(nwbfile.units.get_unit_spike_times(unit_ix), navigation_start_times, navigation_stop_times)
 
     # Head Direction data 
-    head_direction = nwbfile.acquisition['position']['head_direction']
+    head_direction = nwbfile.acquisition['heading']['direction']
     hd_times = head_direction.timestamps[:]
     hd_degrees = head_direction.data[:]
     hd_spikes = get_spike_heading(spikes, hd_times, hd_degrees)
@@ -168,7 +168,7 @@ def compute_hd_occupancy(nwbfile, binsize = 1, windowsize = 23, smooth = True, r
 
     """
     # Head direction data
-    head_direction = nwbfile.acquisition['position']['head_direction']
+    head_direction = nwbfile.acquisition['heading']['direction']
     hd_times = head_direction.timestamps[:]
     hd_degrees = head_direction.data[:]
     
@@ -179,11 +179,11 @@ def compute_hd_occupancy(nwbfile, binsize = 1, windowsize = 23, smooth = True, r
 
     # Get navigation periods 
     navigation_start_times = nwbfile.trials['navigation_start'][:]
-    navigation_end_times = nwbfile.trials['navigation_end'][:]
+    navigation_stop_times = nwbfile.trials['navigation_stop'][:]
 
     # Get hd at each ms timepoint 
     trial_ms = np.arange(np.ceil(session_len))
-    navigation_ms = subset_period_event_time_data(trial_ms, navigation_start_times, navigation_end_times)
+    navigation_ms = subset_period_event_time_data(trial_ms, navigation_start_times, navigation_stop_times)
     hd_ms = get_spike_heading(navigation_ms, hd_times, hd_degrees)
     print('Occupancy determined...')
 
@@ -195,7 +195,7 @@ def compute_hd_occupancy(nwbfile, binsize = 1, windowsize = 23, smooth = True, r
     # else:
     #     _, occ_counts = bin_circular(hd_ms, binsize = binsize)
     
-    occupancy = occ_counts/1e3  # getting #ms time points in each HD, convert to s by /1e3
+    occupancy = occ_counts #/1e3  # getting #ms time points in each HD, convert to s by /1e3
     
     if return_hds:
         return occupancy, hd_ms   # return occupancy in seconds, head direction in degrees each ms

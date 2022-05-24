@@ -1,10 +1,10 @@
 import numpy as np
 
 def cell_firing_rate(
-        spikes,         #ms - may be s now 
+        spikes,         #sec  
         len_epoch, 
-        window = 1000,   #ms 
-        step = 100       #ms 
+        window = 1,   #sec
+        step = 0.1    #sec 
         ):
 
     """ Calculate firing rate across epoch 
