@@ -164,7 +164,7 @@ def plot_hd_raster(
     spikes = (spikes)   #/1e3                                          #convert to trial time in s  
 
     # -- HEAD DIRECTION DATA --
-    head_direction = nwbfile.acquisition['position']['head_direction']
+    head_direction = nwbfile.acquisition['heading']['direction']
     hd_times = (head_direction.timestamps[:])   #/1e3                   #convert to trial time in s
 
 

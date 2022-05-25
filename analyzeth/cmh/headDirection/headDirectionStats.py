@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from analyzeth.cmh.headDirection import *
+from analyzeth.cmh.utils import *
 
 
 
@@ -335,7 +336,7 @@ def bootstrap_ci_from_surrogates(surrogates, func = np.mean, num_bootstraps = 10
             if plot_verbose:
                 plot_bootstrap_replicates_PDF_hist(bootstrap_replicates_bin)
 
-    print('in bs func -- ci95s shape', bootstrap_ci95s.shape)
+    #print('in bs func -- ci95s shape', bootstrap_ci95s.shape)
     return bootstrap_ci95s 
 
 def compute_significant_bins(hd_histogram, confidence_interval):

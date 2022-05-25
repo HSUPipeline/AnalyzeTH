@@ -26,6 +26,8 @@ import numpy as np
 # spiketools
 from spiketools.stats.shuffle import shuffle_spikes
 
+from analyzeth.cmh.utils.cell_firing_rate import *
+
 def nwb_headDirection_session(nwbfile, n_surrogates = 1000, plot=False, subject='wv___'):
     """"
     run and plot for each unit in session
@@ -61,7 +63,10 @@ def nwb_headDirection_cell(nwbfile, unit_ix,
     # Metadata
     subject = nwbfile.subject.subject_id
     session_id = nwbfile.session_id
-    #firing_rate_over_ms 
+    
+    # Firing rates
+    firing_rates_over_time, mean_firing_rates_over_time = nwb_compute_navigation_firing_rates_over_time(nwbfile, unit_ix, return_means=True)
+    mean_firing_rate = nwb_compute_navigation_mean_firing_rate(nwbfile, unit_ix)
 
     # Occupancy
     if occupancy == []:
@@ -84,27 +89,33 @@ def nwb_headDirection_cell(nwbfile, unit_ix,
     surrogates_ci95 = bootstrap_ci_from_surrogates(surrogates_norm)                                                                          #surrogates_ci95 = compute_std_ci95_from_surrogates(surrogates_norm)
     significant_bins = compute_significant_bins(hd_hist_norm, surrogates_ci95)
 
-    print('inside hd func, surci95 size', surrogates_ci95.shape)
-
     if plot:
         title = session_id + f' | Unit {unit_ix}'
         hd_ax = plot_hd_full(hd_hist_norm, surrogates_ci95, significant_bins)
 
-
-
     res = {
-        'hd_score'                  : hd_score,
-        'hd_score_norm'             : hd_norm_score,
-        'hd_histogram'              : hd_hist,
-        'hd_histogram_norm'         : hd_hist_norm,
+        'subject'                       : subject,
+        'session_id'                    : session_id,
 
-        'surrogate_hds'             : surrogate_hds,
-        'surrogate_histograms'      : surrogate_histograms,
-        'surrogate_histograms_norm' : surrogates_norm,
-        'surrogates_ci95'           : surrogates_ci95,
-        'significant_bins'          : significant_bins,
+        'occupancy'                     : occupancy,
 
-        'hd_plot'                   : hd_ax
+        'hd_score'                      : hd_score,
+        'hd_score_norm'                 : hd_norm_score,
+        'hd_histogram'                  : hd_hist,
+        'hd_histogram_norm'             : hd_hist_norm,
+
+        'surrogate_hds'                 : surrogate_hds,
+        'surrogate_histograms'          : surrogate_histograms,
+        'surrogate_histograms_norm'     : surrogates_norm,
+        'surrogates_ci95'               : surrogates_ci95,
+        'significant_bins'              : significant_bins,
+
+        'hd_plot'                       : hd_ax,
+
+        'firing_rates_over_time'        : firing_rates_over_time,
+        'mean_firing_rates_over_time'   : mean_firing_rates_over_time,
+        'mean_firing_rate'              : mean_firing_rate
+
     }
     return res
         

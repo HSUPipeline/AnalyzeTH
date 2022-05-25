@@ -63,17 +63,16 @@ def cell_firing_rate(
             end_reflection.append(reflected_spike)
     spikes = np.concatenate([start_reflection, spikes, end_reflection])
 
-
     # Return to epoch time
-    spikes += epoch_start_time
-    
+    #spikes += epoch_start_time
 
-    # Iter 
+
+    # Iter for bin FRs
     num_bins = int(np.ceil(len_epoch/step)) + 1 
     times = []
     FRs = []                                       
     for ix_win in range(num_bins):
-        center = epoch_start_time + step * ix_win
+        center = step*ix_win #epoch_start_time + step * ix_win
         left = center - window/2
         right = center + window/2
         spikes_bin = spikes[(left<spikes) & (spikes < right)]
@@ -103,15 +102,6 @@ def compute_epochs_firing_rates_over_time (spikes, epoch_start_times, epoch_stop
     for ix in range(num_epochs):
         len_epoch = epoch_stop_times[ix] - epoch_start_times[ix]
         spikes_epoch = restrict_range(spikes, epoch_start_times[ix], epoch_stop_times[ix])
-
-        plt.figure()
-        plt.eventplot(spikes_epoch)
-        plt.title('spikes epoch')
-        plt.show()
-
-        print(epoch_start_times[ix])
-        print(epoch_stop_times[ix])
-
         FRs, times =  cell_firing_rate(spikes_epoch, epoch_start_times[ix], epoch_stop_times[ix], window=1, step=0.1)
         if len(times) > len(fr_times):
             fr_times = times
@@ -160,17 +150,17 @@ def nwb_compute_navigation_firing_rates_over_time (nwbfile, unit_ix, window=1, s
 # FR over time normalized to trial len
 #######################################
 
-def nwb_norm_fr_over_time(nwbfile, unit_ix):
+def nwb_norm_fr_over_time(nwbfile, unit_ix, num_bins = 10):
     """
     Normalize FR bins to trial length...
     """
 
     FRs = nwb_compute_navigation_firing_rates_over_time(nwbfile, unit_ix)
 
-    binned_FRs = np.empty([len(FRs),10])
+    binned_FRs = np.empty([len(FRs),num_bins])
     for ix, FR in enumerate(FRs):
-        print(ix, len(FR), FR)
-        binned = np.array_split(FR, 10)
+        # print(ix, len(FR), FR)
+        binned = np.array_split(FR, num_bins)
         means = [np.mean(bin) for bin in binned]
         binned_FRs[ix,:] = means
     return binned_FRs
@@ -182,15 +172,17 @@ def nwb_norm_fr_over_time(nwbfile, unit_ix):
 # Mean FR
 #############
 
-def compute_epochs_mean_firing_rate(spikes, epoch_start_times, epoch_stop_times):
+def compute_epochs_mean_firing_rate(spikes, epoch_start_times, epoch_stop_times, unit_ix =''):
     """
     Compute mean firing rate during epochs of interest
     """
     num_spikes = len(subset_period_event_time_data(spikes, epoch_start_times, epoch_stop_times))
     len_epochs = epoch_stop_times - epoch_start_times
     total_time = sum(len_epochs)
-    print(f'Num spikes: {num_spikes}')
-    print(f'Total time: {total_time}')
+    # print(f'\nUnit {unit_ix}')
+    # print(f'Num spikes: {num_spikes}')
+    # print(f'Total time: {total_time}')
+    # print(f'Mean FR: {num_spikes/total_time}')
     return num_spikes / total_time
 
 def nwb_compute_navigation_mean_firing_rate(nwbfile, unit_ix, epoch_ixs = 'all' ):
@@ -210,7 +202,7 @@ def nwb_compute_navigation_mean_firing_rate(nwbfile, unit_ix, epoch_ixs = 'all' 
         navigation_stop_times = nwbfile.trials['navigation_stop'][epoch_ixs[0]:epoch_ixs[1]]
 
     # Get mean FR
-    mean_FR = compute_epochs_mean_firing_rate(spikes, navigation_start_times, navigation_stop_times)
+    mean_FR = compute_epochs_mean_firing_rate(spikes, navigation_start_times, navigation_stop_times, unit_ix)
     return mean_FR
 
 
@@ -218,7 +210,7 @@ def nwb_compute_navigation_mean_firing_rate(nwbfile, unit_ix, epoch_ixs = 'all' 
 # Plot
 ############
 
-def plot_cell_firing_rate_over_time(FRs, mean_FR, step = 0.1, axs=None, unit_ix = ''):
+def plot_cell_firing_rate_over_time(FRs, mean_FR, step = 0.1, axs=None, unit_ix = '', ci = 95):
     """
     Plot mean FRs with bootstrapped 95ci and individual trial lengths
     """
@@ -233,7 +225,7 @@ def plot_cell_firing_rate_over_time(FRs, mean_FR, step = 0.1, axs=None, unit_ix 
 
     # FR plot
     ax = axs[0]
-    sns.lineplot(ax = ax, data = df, estimator = np.mean, x='variable', y='value', ci = 95, color = 'grey')
+    sns.lineplot(ax = ax, data = df, estimator = np.mean, x='variable', y='value', ci = ci, color = 'grey')
     ax.set_ylabel('Firing Rate (Hz)', fontsize=14)
     ax.set_yticks([tick for tick in ax.get_yticks()[:-1] if tick % 1 == 0 and tick >=0])
     ax.set_xlabel('')
@@ -264,7 +256,7 @@ def plot_cell_firing_rate_over_time(FRs, mean_FR, step = 0.1, axs=None, unit_ix 
 
     return axs
 
-def plot_nwb_cell_firing_rate_over_time(nwbfile, unit_ix, step=0.1, axs=None):
+def plot_nwb_cell_firing_rate_over_time(nwbfile, unit_ix, step=0.1, axs=None, ci=95):
     """
     Plot mean FR over time from nwb file
     """
@@ -276,6 +268,6 @@ def plot_nwb_cell_firing_rate_over_time(nwbfile, unit_ix, step=0.1, axs=None):
     FRs = nwb_compute_navigation_firing_rates_over_time(nwbfile, unit_ix, step = 0.1)
     mean_FR = nwb_compute_navigation_mean_firing_rate(nwbfile, unit_ix)
     
-    axs = plot_cell_firing_rate_over_time(FRs, mean_FR, step=0.1, axs = axs, unit_ix = unit_ix)
+    axs = plot_cell_firing_rate_over_time(FRs, mean_FR, step=0.1, axs = axs, unit_ix = unit_ix, ci=ci)
 
     return axs
