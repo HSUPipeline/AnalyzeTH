@@ -3,6 +3,7 @@ TODO: update script based on notebook fixes / based on spiketools updates.
 """
 
 import warnings
+import traceback
 
 import numpy as np
 from scipy.stats import sem, ttest_rel
@@ -12,7 +13,7 @@ from matplotlib import gridspec
 from pynwb import NWBHDF5IO
 #from pingouin import convert_angles, circ_rayleigh
 
-from convnwb.io import get_files, save_json
+from convnwb.io import get_files, save_json, save_txt
 
 from spiketools.measures import compute_isis
 from spiketools.stats.shuffle import shuffle_spikes
@@ -301,7 +302,7 @@ def main():
 
                 # 00: plot rasters across all trials
                 ax00 = plt.subplot(grid[0, 0])
-                plot_rasters(all_trials, ax=ax00, title='All Trialsmpt
+                plot_rasters(all_trials, ax=ax00, title='All Trials')
                 # 01: unit information
                 ax01 = plt.subplot(grid[0, 1])
                 plot_text(create_unit_str(unit_info), ax=ax01)
@@ -381,8 +382,9 @@ def main():
 
                 ## COLLECT RESULTS
 
-                results['session'] = session_id
                 results['uid'] = int(unit_ind)
+                results['session'] = session_id
+                results['subject'] = subj_id
                 results['wvID'] = unit_info['wvID']
                 results['keep'] = unit_info['keep']
                 results['cluster'] = unit_info['cluster']
@@ -420,7 +422,7 @@ def main():
                 if not UNIT_SETTINGS['CONTINUE_ON_FAIL']:
                     raise
                 print('\t\tissue running unit # {}'.format(unit_ind))
-                save_json({}, name + '.json', folder=str(PATHS['RESULTS'] / 'units' / TASK / 'zFailed'))
+                save_txt(traceback.format_exc(), name, folder=str(PATHS['RESULTS'] / 'units' / TASK / 'zFailed'))
 
     print('\n\nCOMPLETED UNIT ANALYSES\n\n')
 
