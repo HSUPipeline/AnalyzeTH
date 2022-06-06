@@ -7,7 +7,8 @@ from thefuzz import process      # Levenshtein distancce fuzzy string matching
 from analyzeth.cmh import settings_analysis as SETTINGS 
 
 
-def load_nwb(task = None,
+def load_nwb(string = None,
+             task = None,
              subject = None,
              session = None,
              data_folder = None
@@ -33,6 +34,10 @@ def load_nwb(task = None,
 
     PARAMETERS
     ----------
+    string: str
+        easy way to search, just give a string with relevant info, ex 'thf wv001 ses 0'
+        can leave None and search by each var as args or from settings 
+
     task: str
         name of the task, ex: 
             'THO'
@@ -63,21 +68,28 @@ def load_nwb(task = None,
     # Check for given arguments and load from SETTINGS 
     #       @cmh this could be moved to args, but want to print where 
     #       loading data is taken from
-    if task == None:
-        task = SETTINGS.TASK
-        print ('Task not set \t\t | Task from SETTINGS: \t\t {}'.format(task))
-    if subject == None:
-        subject = SETTINGS.SUBJECT
-        print('Subject not set \t | Subject from SETTINGS: \t {}'.format(subject))
-    if session == None:
-        session = SETTINGS.SESSION
-        print('Session not set \t | Session from SETTINGS: \t {}'.format(session))
+    
     if data_folder == None:
-        data_folder = SETTINGS.DATA_FOLDER
-        print('Data folder not set \t | Data folder from SETTINGS: \t {} \n'.format(data_folder))
+            data_folder = SETTINGS.DATA_FOLDER
+            print('Data folder not set \t | Data folder from SETTINGS: \t {} \n'.format(data_folder))
 
-    # Define expected NWB file name & full path
-    file_name = '_'.join([task, subject, 'session_' + str(session)]) + '.nwb'
+    if not string:
+        if task == None:
+            task = SETTINGS.TASK
+            print ('Task not set \t\t | Task from SETTINGS: \t\t {}'.format(task))
+        if subject == None:
+            subject = SETTINGS.SUBJECT
+            print('Subject not set \t | Subject from SETTINGS: \t {}'.format(subject))
+        if session == None:
+            session = SETTINGS.SESSION
+            print('Session not set \t | Session from SETTINGS: \t {}'.format(session))
+
+        # Define expected NWB file name & full path
+        file_name = '_'.join([task, subject, 'session_' + str(session)]) + '.nwb'
+    else:
+        file_name = string
+
+    # Define path
     file_path = data_folder + file_name
 
     # Try to load file
@@ -93,7 +105,7 @@ def load_nwb(task = None,
         # collect files in folder
         files = glob.glob(data_folder +'*.nwb')
         print('These are the NWB files in your data folder:')
-        print(files, '\n')
+        print(*files, '\n', sep='\n')
 
         # Find closest match
         #closest_file = thefuzz.process.extractOne(file_name, files)
