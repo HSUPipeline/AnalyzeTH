@@ -11,9 +11,16 @@ from analyzeth.plts import plot_polar_hist
 
 from spiketools.utils import restrict_range
 
+# Plots 
+from analyzeth.cmh.position.positionAnalysis import plot_navigation_positions_TH as plotNAV
+from analyzeth.cmh.utils.cell_firing_rate import plot_nwb_cell_firing_rate_over_time as plotFR
+from analyzeth.cmh.utils.cell_firing_rate import nwb_compute_navigation_mean_firing_rate as meanFR
+from analyzeth.cmh.utils.cell_firing_rate import plot_cell_firing_rate_over_time as plotFRT
+from analyzeth.cmh.utils.cell_firing_rate import nwb_norm_fr_over_time as normFR
 
-# Plots
+# Plot gen
 import matplotlib.pyplot as plt 
+import matplotlib.gridspec as gspec
 import seaborn as sns 
 import analyzeth.cmh.settings_plots as PLOTSETTINGS
 sns.set()
@@ -52,11 +59,11 @@ def plot_surrogates_95ci(surrogate_histograms, ax = None):
         ax = plt.subplot(111, polar = True)
     
     binsize = surrogate_histograms.shape[1] / 360
-    print(f'binsize = {binsize}')
+    #print(f'binsize = {binsize}')
     
     df = pd.DataFrame(surrogate_histograms).melt()
-    df['variable'] = np.radians(df['variable']*binsize)
-    sns.lineplot(data = df, x='variable', y = 'value', estimator=np.mean, ci=95, linewidth=0, color = 'r', alpha = 0.9)
+    #df['variable'] = np.radians(df['variable']*binsize)
+    sns.lineplot(ax=ax, data = df, x='variable', y = 'value', estimator=np.mean, ci=95, linewidth=1, color = 'g', alpha = 1)
     return ax
 
 def plot_significant_bin_asterisks(significant_bins, asterisk_y = 5, ax = None):
@@ -69,7 +76,7 @@ def plot_significant_bin_asterisks(significant_bins, asterisk_y = 5, ax = None):
     sig_asterisks = significant_bins * asterisk_y
     sig_asterisks[sig_asterisks == 0] = np.nan
     x = np.radians(np.arange(0,360,1))
-    sns.scatterplot(x=x, y = sig_asterisks, color = 'k')
+    sns.scatterplot(ax=ax, x=x, y = sig_asterisks, color = 'k')
     return ax
 
 def plot_hd_full(hd_histogram, surrogates_ci95, significant_bins, surrogates = None, ax = None, title = ''):
@@ -88,16 +95,16 @@ def plot_hd_full(hd_histogram, surrogates_ci95, significant_bins, surrogates = N
         #plot_surrogates_95ci(surrogates, ax = ax)
     num_bins = len(hd_histogram)
     binsize = 360 / num_bins
-    print('numbins', num_bins)
+    #print('numbins', num_bins)
     x = np.radians(np.arange(0,num_bins, binsize))
     
-    print('lenx', len(x))
-    print('ci95', surrogates_ci95.shape) 
+    #print('lenx', len(x))
+    #print('ci95', surrogates_ci95.shape) 
 
 
 
-    sns.lineplot(x = x, y = surrogates_ci95[:,0], color='y')
-    sns.lineplot(x=x, y = surrogates_ci95[:,1],color='g')
+    sns.lineplot(ax=ax, x = x, y = surrogates_ci95[0], color='y')
+    sns.lineplot(ax=ax, x=x, y = surrogates_ci95[1],color='g')
     
     # Plot significance markers
     max_fr = max(hd_histogram)
@@ -105,10 +112,10 @@ def plot_hd_full(hd_histogram, surrogates_ci95, significant_bins, surrogates = N
     plot_significant_bin_asterisks(significant_bins, asterisk_y, ax = ax)
 
     # Formatting
-    plt.title(title)
+    ax.set_title(title)
     plt.xlabel('')
     plt.ylabel('')
-    plt.show()
+    #plt.show()
 
     return ax
 
@@ -169,9 +176,9 @@ def plot_hd_raster(
 
 
     # -- PLOT --
-    # if not ax:
-    #     ax = plt.subplot(111)
-    fig, ax = plt.subplots(figsize = [14, 5])
+    if not ax:
+        #ax = plt.subplot(111)
+        fig, ax = plt.subplots(figsize = [14, 5])
 
     # Add trial colors
     colors = ['r','y','b'] * 10
@@ -193,9 +200,9 @@ def plot_hd_raster(
     ax.set_title('Unit {} Raster Plot'.format(unit_ix))
 
     # Show plot
-    plt.show()
+    #plt.show()
 
-    return fig, ax
+    return ax
 
 def plot_line_hd_navigation(nwbfile):
     
@@ -271,36 +278,158 @@ def plot_box_hd_vs_shuffle(hd_histogram, surrogate_hd_histograms, ax=None):
     if not ax:
         fig, ax = plt.subplots(figsize=[15,8])
 
-    sns.boxplot(data = np.array(surrogate_hd_histograms), color = 'lightgray', notch= True, saturation=0.5)
-    sns.pointplot(data = np.array(surrogate_hd_histograms), color = 'r', join = False, ci=95)
-    sns.scatterplot(data = hd_histogram, color = 'b', s = 100)
+    sns.scatterplot(ax=ax, data = hd_histogram, color = 'b', s = 100)
+    #sns.lineplot(ax=ax, data = np.array(surrogate_hd_histograms), color = 'r', ci=95, alpha=0.1, lw=0, legend=None)
+    plot_surrogates_95ci(surrogate_hd_histograms, ax = ax)
+    sns.boxplot(ax=ax, data = np.array(surrogate_hd_histograms), color = 'lightgray', notch= False, saturation=0.5)
+
+    #sns.pointplot(ax=ax, data = np.array(surrogate_hd_histograms), color = 'r', join = False, ci=95, alpha=0.1)
     xlabels = np.arange(0,360,10)
+    ax.set_xticks(xlabels)
     ax.set_xticklabels(xlabels, rotation = 90)
     ax.set_ylabel('Firing Rate (Hz)')
     ax.set_xlabel('Degrees')
-    plt.show()
+    #plt.show()
     return ax
 
 
-def plot_bootstrap_replicates_PDF_hist(bootstrap_replicates, bins=30, density=1, ax = None):
+def plot_ci95_PDF_hist(samples, bins=30, density=1, ax = None):
     """
-    Plot probability density function for bootstraps showing 95% confidence interval
+    Plot probability density function for samples (bootstraps, surrogates for bin) showing 95% confidence interval
     """
-    # if ax == None:
-    #     ax = plt.subplots(111)
+    if ax == None:
+        ax = plt.subplot(111)
 
     # Plot the PDF for bootstrap replicates as histogram
-    plt.hist(bootstrap_replicates,bins=30,density=1, stacked=True)
+    plt.hist(samples,bins=30,density=1, stacked=False)
     
     # Showing the related percentiles
-    plt.axvline(x=np.percentile(bootstrap_replicates,[2.5]), ymin=0, ymax=1,label='2.5th percentile',c='y')
-    plt.axvline(x=np.percentile(bootstrap_replicates,[97.5]), ymin=0, ymax=1,label='97.5th percentile',c='r')
+    plt.axvline(x=np.percentile(samples,[2.5]), ymin=0, ymax=1,label='2.5th percentile',c='y')
+    plt.axvline(x=np.percentile(samples,[97.5]), ymin=0, ymax=1,label='97.5th percentile',c='r')
     
     # Formatting
     plt.xlabel("Hz")
     plt.ylabel("PDF")
     plt.title("Probability Density Function")
     plt.legend()
-    plt.show()
+    #plt.show()
 
     return ax
+
+
+#########################################
+# Summary PDF
+
+def add_metadata(ax, res):
+    x = 0
+    y = 0.9
+    for ix, key in enumerate (res['metadata'].keys()):
+        if 'hd_score' in key or 'navtime' in key:
+            ax.text(x, y, f'{key} : {np.round(res["metadata"][key],2)}', va='center', ha='left')
+        else:
+            ax.text(x, y, f'{key} : {res["metadata"][key]}', va='center', ha='left')
+        y-=0.1
+
+    # Add mean fr
+    mean_FR = res['firing_rates']['mean_firing_rate']
+    ax.text(x, y, f'Mean FR (Hz): {np.round(mean_FR,2)}', va='center', ha='left')
+    
+    return ax
+
+
+def plot_headDirection_summary_PDF(nwbfile, res, occupancy):
+    """
+    Plot summary page for unit in nwbfile, res
+    """
+
+    unit_ix = res['metadata']['unit_ix']
+
+
+    fig = plt.figure(figsize=[20,30])
+    gs = gspec.GridSpec(10, 10, figure=fig, hspace = 2, wspace=1, height_ratios = [2,2,2,1,2,2,2,2,2,1])#, width_ratios = [3,2,2,2,2])
+
+    # Add metadata
+    ax0 = fig.add_subplot(gs[0:2,0:2])
+    ax = ax0
+    ax.set_facecolor('white')
+    ax.set_yticks([])
+    ax.set_yticklabels([])
+    ax.set_xticks([])
+    add_metadata(ax, res)
+
+    # Add HD plot
+    ax1 = fig.add_subplot(gs[0:4,2:6], polar=True)
+    ax = ax1
+    hd_hist_norm = res['head_direction']['hd_histogram_norm']
+    surrogates_ci95 = res['surrogates']['surrogates_ci95']
+    significant_bins = res['surrogates']['significant_bins']
+    ax = plot_hd_full(hd_hist_norm, surrogates_ci95, significant_bins, ax = ax, title = 'Normalized Head Direction vs. Surrogates')
+
+
+    # Add Occupancy 
+    ax2 = fig.add_subplot(gs[0:4,6:], polar=True)
+    ax = ax2
+    ax = plot_hd(occupancy, ax=ax)
+    ax.set_title('Occupancy (Sec)')
+
+
+    # add movement
+    ax3 = fig.add_subplot(gs[6:8, 1:3])
+    ax=ax3
+    ax = plotNAV(nwbfile, ax=ax)
+    #ax.set_aspect(0.5)
+    ax.set_title('Navigation')
+
+
+    # Add boxplot
+    ax8 = fig.add_subplot(gs[3:6 , 1:-1]) 
+    ax = ax8
+    surrogate_hists = res['surrogates']['surrogate_histograms_norm']
+    ax = plot_box_hd_vs_shuffle(hd_hist_norm, surrogate_hists, ax=ax)
+
+    # Add Raster
+    ax9 = fig.add_subplot(gs[6:8  , 4:-1])
+    ax = ax9
+    ax = plot_hd_raster(nwbfile, unit_ix, ax=ax)
+
+    # Firing Rates
+    mean_FR = res['firing_rates']['mean_firing_rate']
+
+
+    # Add FR plot1
+    ax10 = fig.add_subplot(gs[8,1:3])
+    ax11 = fig.add_subplot(gs[9,1:3])
+    axs = plotFR(nwbfile, unit_ix, axs=[ax10,ax11], ci=95)
+    ax10.set_title('FR (ci95)')
+
+    # Add FR plot2
+    ax12 = fig.add_subplot(gs[8,3:5])
+    ax13 = fig.add_subplot(gs[9,3:5])
+    axs = plotFR(nwbfile, unit_ix, axs=[ax12,ax13], ci='sd')
+    ax12.set_ylabel('')
+    ax13.set_ylabel('')
+    ax12.set_title('FR (sd)')
+
+    # FRP3
+    ax14 = fig.add_subplot(gs[8,5:7])
+    ax15 = fig.add_subplot(gs[9,5:7])
+    bfr = normFR(nwbfile, unit_ix, num_bins = 100)
+    plotFRT(bfr, mean_FR, unit_ix=unit_ix, ci=95, axs=[ax14, ax15])
+    ax14.set_ylabel('')
+    ax15.set_ylabel('')
+    ax14.set_title('Norm FR (ci95)')
+
+    # FRP4
+    ax16 = fig.add_subplot(gs[8,7:9])
+    ax17 = fig.add_subplot(gs[9,7:9])
+    bfr = normFR(nwbfile, unit_ix, num_bins = 100)
+    plotFRT(bfr, mean_FR, unit_ix=unit_ix, ci='sd', axs=[ax16, ax17])
+    ax16.set_ylabel('')
+    ax17.set_ylabel('')
+    ax16.set_title('Norm FR (sd)')
+
+    # Save
+    #plt.tight_layout()
+    plt.savefig(res['metadata']['session_id'] + '_unit' + str(unit_ix) + '.pdf')
+
+    return fig

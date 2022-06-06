@@ -6,11 +6,8 @@ from time import sleep
 ###################################################################################################
 ###################################################################################################
 
-def get_spike_positions(spikes, times, positions):
+def get_spike_positions(spikes, times, positions, threshold=0.25):
     """Get xy-positions for spike times."""
-
-    #tspike, tpos = [], []
-    #inds = []
 
     spike_xs = []
     spike_ys = []
@@ -20,16 +17,40 @@ def get_spike_positions(spikes, times, positions):
         idx = (np.abs(times - spike)).argmin()
         diff = np.abs(times[idx] - spike)
 
-        if diff < 100:
+        if diff < threshold:
 
             spike_xs.append(positions[0, idx])
             spike_ys.append(positions[1, idx])
 
-            # inds.append(idx)
-            # tspike.append(spike)
-            # tpos.append(ptimes[idx])
-
     return spike_xs, spike_ys
+    
+# def get_spike_positions(spikes, times, positions):
+#     """Get xy-positions for spike times."""
+
+#     #tspike, tpos = [], []
+#     #inds = []
+
+#     spike_xs = []
+#     spike_ys = []
+    
+#     print (positions)
+#     print(positions[0,1])
+
+#     for spike in spikes:
+
+#         idx = (np.abs(times - spike)).argmin()
+#         diff = np.abs(times[idx] - spike)
+
+#         if diff < 100:
+
+#             spike_xs.append(positions[idx,0])
+#             spike_ys.append(positions[idx,1])
+
+#             # inds.append(idx)
+#             # tspike.append(spike)
+#             # tpos.append(ptimes[idx])
+
+#     return spike_xs, spike_ys
 
 
 def get_spike_heading(spike_times, hd_times, hd_degrees):

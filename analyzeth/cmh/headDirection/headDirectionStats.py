@@ -4,8 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from analyzeth.cmh.headDirection import *
+from analyzeth.cmh.headDirection.headDirectionUtils import *
 from analyzeth.cmh.utils import *
-
+from analyzeth.analysis import get_spike_heading
 
 
 ##################################################################
@@ -259,7 +260,17 @@ def compute_std_ci95_from_surrogates(surrogates):
     ci95 = np.vstack([ci_high, ci_low])
     return ci95 
 
-
+def compute_pdf_ci95_from_surrogates(surrogates):
+    """ Compute ci95 from PDF of surrogates for each bin """
+    n_surrogates, n_bins = surrogates.shape[0], surrogates.shape[1]
+    ci_low, ci_high = [], []
+    for ix in range (n_bins):
+        bin = surrogates[:,ix]
+        low, high = np.percentile(bin, 2.5), np.percentile(bin, 97.5)
+        ci_low.append(low)
+        ci_high.append(high)
+    ci95 = np.vstack([ci_high, ci_low])
+    return ci95 
 
 ##################################################################
 # Bootstrap equations
@@ -334,10 +345,13 @@ def bootstrap_ci_from_surrogates(surrogates, func = np.mean, num_bootstraps = 10
         if verbose and ix%100 ==0:
             print(f'Computing boostrap for bin {ix}')
             if plot_verbose:
-                plot_bootstrap_replicates_PDF_hist(bootstrap_replicates_bin)
+                plot_ci95_PDF_hist(bootstrap_replicates_bin)
 
     #print('in bs func -- ci95s shape', bootstrap_ci95s.shape)
     return bootstrap_ci95s 
+
+#########################
+# Significant bins from ci95
 
 def compute_significant_bins(hd_histogram, confidence_interval):
     """
@@ -361,7 +375,7 @@ def compute_significant_bins(hd_histogram, confidence_interval):
         bin + 5 bins on each side)
 
     """
-    hd_mask = hd_histogram > confidence_interval[:,1]
+    hd_mask = hd_histogram > confidence_interval[0]
     hd_mask_circle = np.hstack([hd_mask, hd_mask[:10]])
 
     num_bins = len(hd_histogram)

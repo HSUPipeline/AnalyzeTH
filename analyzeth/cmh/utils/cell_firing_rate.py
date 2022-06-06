@@ -218,9 +218,10 @@ def plot_cell_firing_rate_over_time(FRs, mean_FR, step = 0.1, axs=None, unit_ix 
     df['variable'] = df['variable'] * step
     
     # Plot
-    #if not axs.any():
-    #    fig, axs = plt.subplots(2, figsize=[4,5], gridspec_kw={'height_ratios': [3, 1], 'hspace': 0.0})
-    fig, axs = plt.subplots(2, figsize=[4,5], gridspec_kw={'height_ratios': [3, 1], 'hspace': 0.0})
+    if axs=='make':
+        fig, axs = plt.subplots(2, figsize=[4,5], gridspec_kw={'height_ratios': [3, 1], 'hspace': 0.0})
+    #fig, axs = plt.subplots(2, figsize=[4,5], gridspec_kw={'height_ratios': [3, 1], 'hspace': 0.0})
+    
     xtick_locations = np.arange(0, max(df['variable']), 10);
 
     # FR plot
@@ -233,6 +234,7 @@ def plot_cell_firing_rate_over_time(FRs, mean_FR, step = 0.1, axs=None, unit_ix 
     ax.set_xticks(xtick_locations)
     ax.set_xticklabels([])
     ax.tick_params(axis=u'both', which=u'both',length=0)
+    ax.set_title(f'Unit {unit_ix} | Mean FR = {np.round(mean_FR,2)} Hz')
 
     # Epoch length plot
     ax = axs[1]
@@ -250,9 +252,9 @@ def plot_cell_firing_rate_over_time(FRs, mean_FR, step = 0.1, axs=None, unit_ix 
     ax.tick_params(axis=u'both', which=u'both',length=0)
 
     # Sup formatting 
-    plt.suptitle(f'Unit {unit_ix} | Mean FR = {np.round(mean_FR,2)} Hz')
-    plt.tight_layout()
-    plt.show()
+    #plt.suptitle(f'Unit {unit_ix} | Mean FR = {np.round(mean_FR,2)} Hz')
+    #plt.tight_layout()
+    #plt.show()
 
     return axs
 

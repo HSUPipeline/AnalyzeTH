@@ -8,6 +8,7 @@
 #from analyzeth.analysis import get_spike_heading, bin_circular
 
 
+from analyzeth.cmh.headDirection.headDirectionStats import nwb_shuffle_spikes_bincirc_navigation
 from analyzeth.cmh.utils import *
 from analyzeth.cmh.headDirection.headDirectionPlots import * 
 from analyzeth.cmh.headDirection.headDirectionUtils import * 
@@ -60,9 +61,19 @@ def nwb_headDirection_cell(nwbfile, unit_ix,
     """
     Run head direction analysis for unit and compare to surrogates
     """
-    # Metadata
+    # Metadata -- CLEAN
     subject = nwbfile.subject.subject_id
     session_id = nwbfile.session_id
+    n_trials = len(nwbfile.trials)
+    n_units = len(nwbfile.units)
+    spikes = nwbfile.units.get_unit_spike_times(unit_ix)
+    n_spikes_tot = len(spikes)
+    navigation_start_times = nwbfile.trials['navigation_start'][:]
+    navigation_stop_times = nwbfile.trials['navigation_stop'][:]
+    len_epochs = navigation_stop_times - navigation_start_times
+    total_time = sum(len_epochs)
+    spikes_navigation = subset_period_event_time_data(spikes, navigation_start_times, navigation_stop_times)
+    n_spikes_navigation = len(spikes_navigation)
     
     # Firing rates
     firing_rates_over_time, mean_firing_rates_over_time = nwb_compute_navigation_firing_rates_over_time(nwbfile, unit_ix, return_means=True)
@@ -86,36 +97,62 @@ def nwb_headDirection_cell(nwbfile, unit_ix,
     surrogate_hds = get_hd_shuffled_head_directions(shuffled_spikes, hd_times, hd_degrees)
     surrogate_histograms = get_hd_surrogate_histograms(surrogate_hds, binsize, windowsize, smooth)
     surrogates_norm = normalize_hd_surrogate_histograms_to_occupancy(surrogate_histograms, occupancy)
-    surrogates_ci95 = bootstrap_ci_from_surrogates(surrogates_norm)                                                                          #surrogates_ci95 = compute_std_ci95_from_surrogates(surrogates_norm)
+    
+    # ci95
+    #surrogates_ci95 = compute_pdf_ci95_from_surrogates(surrogates_norm)
+    #surrogates_ci95 = bootstrap_ci_from_surrogates(surrogates_norm)                                               
+    surrogates_ci95 = compute_std_ci95_from_surrogates(surrogates_norm)
     significant_bins = compute_significant_bins(hd_hist_norm, surrogates_ci95)
 
+    hd_ax=None
     if plot:
+        print(hd_hist_norm.shape)
+        print(surrogates_ci95.shape)
+        print(significant_bins.shape)
+
         title = session_id + f' | Unit {unit_ix}'
         hd_ax = plot_hd_full(hd_hist_norm, surrogates_ci95, significant_bins)
 
     res = {
-        'subject'                       : subject,
-        'session_id'                    : session_id,
+        'metadata' : {
+            'subject'                       : subject,
+            'session_id'                    : session_id,
+            'unit_ix'                       : unit_ix, 
+            'nspikes'                       : n_spikes_tot,
+            'nspikes_nav'                   : n_spikes_navigation,
+            'navtime'                       : total_time,
+            'nunits'                        : n_units,
+            'ntrials'                       : n_trials,
+            'nsurrogates'                   : n_surrogates,
+            'hd_score'                      : hd_score,
+            'hd_score_norm'                 : hd_norm_score
+        },
 
         'occupancy'                     : occupancy,
 
-        'hd_score'                      : hd_score,
-        'hd_score_norm'                 : hd_norm_score,
-        'hd_histogram'                  : hd_hist,
-        'hd_histogram_norm'             : hd_hist_norm,
+        'head_direction' : {
+            'hd_score'                      : hd_score,
+            'hd_score_norm'                 : hd_norm_score,
+            'hd_histogram'                  : hd_hist,
+            'hd_histogram_norm'             : hd_hist_norm,
+        },
+        
+        'surrogates' : {
+            'surrogate_hds'                 : surrogate_hds,
+            'surrogate_histograms'          : surrogate_histograms,
+            'surrogate_histograms_norm'     : surrogates_norm,
+            'surrogates_ci95'               : surrogates_ci95,
+            'significant_bins'              : significant_bins,
+        },
+        
+        'firing_rates' : {
+            'firing_rates_over_time'        : firing_rates_over_time,
+            'mean_firing_rates_over_time'   : mean_firing_rates_over_time,
+            'mean_firing_rate'              : mean_firing_rate
 
-        'surrogate_hds'                 : surrogate_hds,
-        'surrogate_histograms'          : surrogate_histograms,
-        'surrogate_histograms_norm'     : surrogates_norm,
-        'surrogates_ci95'               : surrogates_ci95,
-        'significant_bins'              : significant_bins,
+        },
 
-        'hd_plot'                       : hd_ax,
-
-        'firing_rates_over_time'        : firing_rates_over_time,
-        'mean_firing_rates_over_time'   : mean_firing_rates_over_time,
-        'mean_firing_rate'              : mean_firing_rate
-
+        'hd_plot'                       :   hd_ax
     }
     return res
         

@@ -16,7 +16,7 @@ from spiketools.spatial.occupancy import (compute_occupancy, compute_spatial_bin
                                           compute_spatial_bin_assignment)
 
 # Local
-from analyzeth.cmh.load_nwb import load_nwb
+from analyzeth.cmh.utils.load_nwb import load_nwb
 from analyzeth.analysis import get_spike_positions, compute_bin_firing
 from analyzeth.plts import plot_polar_hist
 
@@ -85,6 +85,7 @@ def plot_positions_TH(
 def plot_navigation_positions_TH(
         nwbfile = None,
         bins = [7, 21],
+        ax = None,
         task = SETTINGS.TASK,
         subject = SETTINGS.SUBJECT,
         session = SETTINGS.SESSION,
@@ -115,10 +116,10 @@ def plot_navigation_positions_TH(
     spikes = restrict_range(spikes, session_start, session_end)
     
     # Position data
-    pos = nwbfile.acquisition['position']['xy_position']
+    pos = nwbfile.acquisition['position']['player_position']
     position_times = pos.timestamps[:]
-    positions = pos.data[:]
-    print('Num positions: \t {}'.format(len(position_times)))
+    positions = pos.data[:].T 
+    #print('Num positions: \t {}'.format(len(position_times)))
 
     # Check binning
     x_bin_edges, y_bin_edges = compute_spatial_bin_edges(positions, bins)
@@ -126,7 +127,7 @@ def plot_navigation_positions_TH(
 
     # -- RESTRICT TO NAVIGATION PERIODS -- 
     navigation_start_times = nwbfile.trials['navigation_start'][:]
-    navigation_end_times = nwbfile.trials['navigation_end'][:]
+    navigation_end_times = nwbfile.trials['navigation_stop'][:]
     
     # Get spikes during navigation period 
     spikes_navigation = np.array([])
@@ -142,12 +143,13 @@ def plot_navigation_positions_TH(
     spike_positions = np.array([spike_xs, spike_ys])
     
     # -- PLOT --
-    fig, ax = plt.subplots(figsize = [5,7])
+    #fig, ax = plt.subplots(figsize = [5,7])
     
     # Get and positions during each navigation period individually
     for ix in range(len(navigation_start_times)):
         navigation_ixs = np.where((navigation_start_times[ix] < position_times) \
                                 & (position_times < navigation_end_times[ix]))
+
         navigation_positions = positions[:, navigation_ixs[0]] #np.where returns tuple even for 1d
 
         plot_positions(navigation_positions, 
@@ -157,7 +159,7 @@ def plot_navigation_positions_TH(
                     ax = ax,
                     color = 'b')
         
-    return fig, ax
+    return ax
 
 def plot_navigation_positions_TH_OLD(
         nwbfile = None,
