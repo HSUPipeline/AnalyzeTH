@@ -8,6 +8,8 @@ import numpy as np
 from spiketools.stats.anova import create_dataframe, fit_anova
 from spiketools.utils.data import restrict_range, get_value_by_time, get_value_by_time_range
 
+from analysis import get_spike_positions
+
 ###################################################################################################
 ###################################################################################################
 
