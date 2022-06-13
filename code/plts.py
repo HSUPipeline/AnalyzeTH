@@ -1,8 +1,17 @@
 """Plotting functions for TH analysis."""
 
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import numpy as np
+import seaborn as sns
+sns.set_context('talk')
+from copy import deepcopy
 
 from spiketools.plts.task import plot_task_structure as _plot_task_structure
+from spiketools.plts.spatial import plot_positions, plot_heatmap
+from spiketools.utils.data import get_range
+
+# from target import reshape_target_bins
 
 ###################################################################################################
 ###################################################################################################
