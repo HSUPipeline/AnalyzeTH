@@ -111,3 +111,59 @@ def get_trial_target(spikes, navigations, bins, openings, chest_trials,
         target_bins_all[t_ind,:] = target_bins.flatten()
 
     return target_bins_all
+
+
+def get_target_chest_location(target_bins, ch_xbin, ch_ybin, chest_xs, chest_ys):
+    """compute the location of chests in a target bin"""
+    
+    bin_y, bin_x = np.where(target_bins==np.amax(target_bins))
+    
+    xbin = set(np.where(ch_xbin==bin_x)[0])
+    ybin = set(np.where(ch_ybin==bin_y)[0])
+    
+    intersect = sorted(np.array(list(xbin.intersection(ybin))))
+    
+    chest_x = [chest_xs[i] for i in intersect]
+    chest_y = [chest_ys[i] for i in intersect]
+    
+    return intersect, chest_x, chest_y
+
+  
+def get_chest_data_per_bin(intersect, chest_trial_number, ptimes, positions, spikes, ch_openings_all, nav_starts):
+    """Get spikes and positions of all chest in a target bin"""
+    
+    t_pos_all = []
+    t_all_xs = []
+    t_all_ys = []
+    
+    for i in intersect:
+        # For the non-first chest position per trial
+        if i not in chest_trial_number[:,0]:
+            t_time, t_pos = get_value_by_time_range(ptimes, positions, ch_openings_all[i], ch_openings_all[i+1])
+            t_pos_all.append(t_pos)
+
+            t_spikes = restrict_range(spikes, ch_openings_all[i], ch_openings_all[i+1])
+            t_spike_xs, t_spike_ys = get_spike_positions(t_spikes, t_time, t_pos)
+
+            t_spike_xs = np.array(t_spike_xs).flatten()
+            t_spike_ys = np.array(t_spike_ys).flatten()
+            t_all_xs.append(t_spike_xs)
+            t_all_ys.append(t_spike_ys) 
+        # For the first chest position per trial
+        else:          
+            x = int(i/4)
+            t_time, t_pos = get_value_by_time_range(ptimes, positions, nav_starts[x], ch_openings_all[i])
+            t_pos_all.append(t_pos)
+
+            t_spikes = restrict_range(spikes, nav_starts[x], ch_openings_all[i])
+            t_spike_xs, t_spike_ys = get_spike_positions(t_spikes, t_time, t_pos)
+
+            t_spike_xs = np.array(t_spike_xs).flatten()
+            t_spike_ys = np.array(t_spike_ys).flatten()
+            t_all_xs.append(t_spike_xs)
+            t_all_ys.append(t_spike_ys)
+            
+    t_all_xs = np.concatenate(t_all_xs).ravel()
+    t_all_ys = np.concatenate(t_all_ys).ravel()   
+    
+    return t_pos_all, t_all_xs, t_all_ys
