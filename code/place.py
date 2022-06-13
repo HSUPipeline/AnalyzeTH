@@ -6,7 +6,7 @@ from functools import partial
 import numpy as np
 
 from spiketools.stats.anova import create_dataframe, fit_anova
-from spiketools.spatial.occupancy import (compute_nbins, compute_spatial_bin_assignment,
+from spiketools.spatial.occupancy import (compute_nbins, compute_bin_assignment,
                                           compute_occupancy)
 from spiketools.utils.data import restrict_range, get_value_by_time_range
 
