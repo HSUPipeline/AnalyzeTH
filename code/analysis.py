@@ -52,13 +52,3 @@ def calc_trial_frs(trials, tlen=1., average=True):
         fr_post = np.mean(fr_post)
 
     return fr_pre, fr_post
-
-
-def compute_bin_firing(x_binl, y_binl, bins):
-    """Compute firing per bin, givin bin assignment of each spike."""
-
-    bin_firing = np.zeros(bins)
-    for x_bl, y_bl in zip(x_binl, y_binl):
-        bin_firing[x_bl - 1, y_bl - 1] += 1
-
-    return bin_firing

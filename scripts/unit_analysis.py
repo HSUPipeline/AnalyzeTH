@@ -1,6 +1,9 @@
-"""Run TH analysis across all units."""
+"""Run TH analysis across all units.
+TODO: update script based on notebook fixes / based on spiketools updates.
+"""
 
 import warnings
+import traceback
 
 import numpy as np
 from scipy.stats import sem, ttest_rel
@@ -10,7 +13,7 @@ from matplotlib import gridspec
 from pynwb import NWBHDF5IO
 #from pingouin import convert_angles, circ_rayleigh
 
-from convnwb.io import get_files, save_json
+from convnwb.io import get_files, save_json, save_txt
 
 from spiketools.measures import compute_isis
 from spiketools.stats.shuffle import shuffle_spikes
@@ -20,12 +23,9 @@ from spiketools.plts.trials import plot_rasters
 from spiketools.plts.data import plot_bar, plot_polar_hist, plot_text
 from spiketools.plts.stats import plot_surrogates
 from spiketools.plts.annotate import color_pval
-from spiketools.stats.permutations import (compute_surrogate_stats,
-                                           compute_empirical_pvalue, zscore_to_surrogates)
-from spiketools.spatial.occupancy import (compute_occupancy, compute_spatial_bin_edges,
-                                          compute_spatial_bin_assignment)
-from spiketools.spatial.information import (compute_spatial_information_2d,
-                                            _compute_spatial_information)
+from spiketools.stats.permutations import compute_surrogate_stats
+from spiketools.spatial.occupancy import compute_occupancy, compute_bin_edges, compute_bin_assignment
+from spiketools.spatial.information import compute_spatial_information
 from spiketools.utils.data import get_range
 from spiketools.utils.trials import (epoch_spikes_by_event, epoch_spikes_by_range,
                                      epoch_data_by_range)
@@ -177,7 +177,7 @@ def main():
                 fr_pre_full, fr_post_full = calc_trial_frs(full_trials)
 
                 # Compute bin edges
-                x_bin_edges, y_bin_edges = compute_spatial_bin_edges(\
+                x_bin_edges, y_bin_edges = compute_bin_edges(\
                     positions, ANALYSIS_SETTINGS['PLACE_BINS'], area_range=area_range)
 
                 # Get position values for each spike
@@ -192,7 +192,7 @@ def main():
                                         speed, **occ_kwargs)
 
                 # Compute spatial bin assignments & binned firing, and normalize by occupancy
-                x_binl, y_binl = compute_spatial_bin_assignment(spike_positions, x_bin_edges, y_bin_edges)
+                x_binl, y_binl = compute_bin_assignment(spike_positions, x_bin_edges, y_bin_edges)
                 bin_firing = compute_bin_firing(x_binl, y_binl, ANALYSIS_SETTINGS['PLACE_BINS'])
                 bin_firing = bin_firing / occ
 
@@ -200,12 +200,12 @@ def main():
                 #spike_hds = get_spike_heading(spikes, hd_times, hd_degrees)
 
                 # Compute edges for chest binning
-                ch_x_edges, ch_y_edges = compute_spatial_bin_edges(\
+                ch_x_edges, ch_y_edges = compute_bin_edges(\
                     positions, ANALYSIS_SETTINGS['CHEST_BINS'], area_range=area_range)
 
                 # Assign each chest to a bin
                 chest_pos = np.array([chest_xs, chest_ys])
-                ch_xbin, ch_ybin = compute_spatial_bin_assignment(chest_pos, ch_x_edges, ch_y_edges)
+                ch_xbin, ch_ybin = compute_bin_assignment(chest_pos, ch_x_edges, ch_y_edges)
 
                 # Fix offset of chest binning
                 ch_xbin = ch_xbin - 1
@@ -223,7 +223,7 @@ def main():
 
                 # Place cell analysis
                 if METHOD_SETTINGS['PLACE'] == 'INFO':
-                    place_value = compute_spatial_information_2d(spike_xs, spike_ys, [x_bin_edges, y_bin_edges], occ)
+                    place_value = compute_spatial_information(spike_xs, spike_ys, [x_bin_edges, y_bin_edges], occ)
                 if METHOD_SETTINGS['PLACE'] == 'ANOVA':
                     place_trial = get_trial_place(spikes, nwbfile.trials, ANALYSIS_SETTINGS['PLACE_BINS'],
                                                   ptimes, positions, speed, x_bin_edges, y_bin_edges, occ_kwargs)
@@ -260,7 +260,7 @@ def main():
                     # PLACE
                     if METHOD_SETTINGS['PLACE'] == 'INFO':
                         s_spike_xs, s_spike_ys = get_spike_positions(shuffle, ptimes, positions)
-                        place_surrs[ind] = compute_spatial_information_2d(s_spike_xs, s_spike_ys,
+                        place_surrs[ind] = compute_spatial_information(s_spike_xs, s_spike_ys,
                                                                           [x_bin_edges, y_bin_edges], occ)
                     if METHOD_SETTINGS['PLACE'] == 'ANOVA':
                         s_place_trial = get_trial_place(shuffle, nwbfile.trials, ANALYSIS_SETTINGS['PLACE_BINS'],
@@ -382,8 +382,9 @@ def main():
 
                 ## COLLECT RESULTS
 
-                results['session'] = session_id
                 results['uid'] = int(unit_ind)
+                results['session'] = session_id
+                results['subject'] = subj_id
                 results['wvID'] = unit_info['wvID']
                 results['keep'] = unit_info['keep']
                 results['cluster'] = unit_info['cluster']
@@ -421,7 +422,7 @@ def main():
                 if not UNIT_SETTINGS['CONTINUE_ON_FAIL']:
                     raise
                 print('\t\tissue running unit # {}'.format(unit_ind))
-                save_json({}, name + '.json', folder=str(PATHS['RESULTS'] / 'units' / TASK / 'zFailed'))
+                save_txt(traceback.format_exc(), name, folder=str(PATHS['RESULTS'] / 'units' / TASK / 'zFailed'))
 
     print('\n\nCOMPLETED UNIT ANALYSES\n\n')
 

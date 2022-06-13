@@ -63,39 +63,39 @@ def main():
         summary['error'].append(np.median(nwbfile.trials.error[:]))
         summary['correct'].append(np.mean(nwbfile.trials.correct[:]))
 
-        # Collect information of interest
-        group_info = create_group_info(summary)
+    # Collect information of interest
+    group_info = create_group_info(summary)
 
-        ## CREATE REPORT
-        # Initialize figure
-        _ = plt.figure(figsize=(15, 12))
-        grid = gridspec.GridSpec(3, 3, wspace=0.4, hspace=1.0)
-        plt.suptitle('Group Report - {} - {} sessions'.format(TASK, len(summary['ids'])),
-                     fontsize=24, y=0.95);
+    ## CREATE REPORT
+    # Initialize figure
+    _ = plt.figure(figsize=(15, 12))
+    grid = gridspec.GridSpec(3, 3, wspace=0.4, hspace=1.0)
+    plt.suptitle('Group Report - {} - {} sessions'.format(TASK, len(summary['ids'])),
+                 fontsize=24, y=0.95);
 
-        # 00: group text
-        ax00 = plt.subplot(grid[0, 0])
-        plot_text(create_group_str(group_info), ax=ax00)
+    # 00: group text
+    ax00 = plt.subplot(grid[0, 0])
+    plot_text(create_group_str(group_info), ax=ax00)
 
-        # 01: neuron firing
-        ax01 = plt.subplot(grid[0, 1])
-        plot_hist(summary['n_units'], title='Number of Units', ax=ax01)
+    # 01: neuron firing
+    ax01 = plt.subplot(grid[0, 1])
+    plot_hist(summary['n_units'], title='Number of Units', ax=ax01)
 
-        # 10-12: behavioural data
-        ax10 = plt.subplot(grid[1, 0])
-        plot_hist(summary['n_trials'], title='Number of trials', ax=ax10)
-        ax11 = plt.subplot(grid[1, 1])
-        plot_hist(summary['correct'] * 100, title='Percent Correct', ax=ax11)
-        ax12 = plt.subplot(grid[1, 2])
-        plot_hist(summary['error'], title='Average Error', ax=ax12)
+    # 10-12: behavioural data
+    ax10 = plt.subplot(grid[1, 0])
+    plot_hist(summary['n_trials'], title='Number of trials', ax=ax10)
+    ax11 = plt.subplot(grid[1, 1])
+    plot_hist(summary['correct'] * 100, title='Percent Correct', ax=ax11)
+    ax12 = plt.subplot(grid[1, 2])
+    plot_hist(summary['error'], title='Average Error', ax=ax12)
 
-        # 21: detailed session strings
-        ax21 = plt.subplot(grid[2, 1])
-        plot_text('\n'.join(create_group_sessions_str(summary)), ax=ax21)
+    # 21: detailed session strings
+    ax21 = plt.subplot(grid[2, 1])
+    plot_text('\n'.join(create_group_sessions_str(summary)), ax=ax21)
 
-        # Save out report
-        report_name = 'group_report_' + TASK + '.pdf'
-        plt.savefig(PATHS['REPORTS'] / 'group' / report_name)
+    # Save out report
+    report_name = 'group_report_' + TASK + '.pdf'
+    plt.savefig(PATHS['REPORTS'] / 'group' / report_name)
 
     print('\n\nCOMPLETED GROUP ANALYSES\n\n')
 
