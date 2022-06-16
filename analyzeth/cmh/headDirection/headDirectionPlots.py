@@ -337,7 +337,7 @@ def add_metadata(ax, res):
     return ax
 
 
-def plot_headDirection_summary_PDF(nwbfile, res, occupancy):
+def plot_headDirection_summary_PDF(nwbfile, res, occupancy, save_fig = False):
     """
     Plot summary page for unit in nwbfile, res
     """
@@ -430,6 +430,7 @@ def plot_headDirection_summary_PDF(nwbfile, res, occupancy):
 
     # Save
     #plt.tight_layout()
-    plt.savefig(res['metadata']['session_id'] + '_unit' + str(unit_ix) + '.pdf')
+    if save_fig:
+        plt.savefig(res['metadata']['session_id'] + '_unit' + str(unit_ix) + '.pdf')
 
     return fig
