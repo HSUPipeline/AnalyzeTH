@@ -100,16 +100,23 @@ def load_nwb(string = None,
 
     except:
         # -- FIND CLOSEST MATCH --
-        print ('Could not find exact match. Looking for closest match... \n')
-
         # collect files in folder
         files = glob.glob(data_folder +'*.nwb')
-        print('These are the NWB files in your data folder:')
-        print(*files, '\n', sep='\n')
-
+    
         # Find closest match
         #closest_file = thefuzz.process.extractOne(file_name, files)
         closest_file = process.extractOne(file_name, files)
+
+        # if match score 100 then just return
+        if closest_file[1] == 100:
+            file_path = closest_file[0]
+            io = NWBHDF5IO(file_path, 'r')
+            nwbfile = io.read()
+            return nwbfile
+
+        print ('Could not find exact match. Looking for closest match... \n')
+        print('These are the NWB files in your data folder:')
+        print(*files, '\n', sep='\n')
         print('This file was found to have the closest match:')
         print (closest_file[0])
         print('Match Score = {} \n'.format(closest_file[1]))

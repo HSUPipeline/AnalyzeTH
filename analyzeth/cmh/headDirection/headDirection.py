@@ -8,33 +8,69 @@
 #from analyzeth.analysis import get_spike_heading, bin_circular
 
 
+# Local
 from analyzeth.cmh.headDirection.headDirectionStats import nwb_shuffle_spikes_bincirc_navigation
 from analyzeth.cmh.utils import *
 from analyzeth.cmh.headDirection.headDirectionPlots import * 
 from analyzeth.cmh.headDirection.headDirectionUtils import * 
 from analyzeth.cmh.headDirection.headDirectionStats import * 
-
-import pandas as pd
-import matplotlib.pyplot as plt
-import scipy.stats as st
-import numpy as np
-
-
-
-
-
+from analyzeth.cmh.utils.cell_firing_rate import *
 
 # spiketools
 from spiketools.stats.shuffle import shuffle_spikes
 
-from analyzeth.cmh.utils.cell_firing_rate import *
+# General 
+import pickle
+import pandas as pd
+import matplotlib.pyplot as plt
+import scipy.stats as st
+import numpy as np
+import os
+from datetime import datetime
+import glob
 
-def nwb_headDirection_session(nwbfile, n_surrogates = 1000, plot=False, subject='wv___'):
+# Analysis Settings
+import analyzeth.cmh.headDirection.settings_HD as SETTINGS
+
+def nwb_headDirection_group(data_folder, settings = SETTINGS, plot=False, save_report = False, save_pickle = False, ix_break = np.inf):
+    """
+    Grep all .nwbs in dir and NOT subdirs and run analysis on all
+    """
+
+    files = glob.glob(data_folder +'*.nwb')
+    
+    df = None
+
+    for ix, file_name in enumerate(files):
+        print ('------ Starting Session ' + str(file_name) + ' -------')
+
+        nwbfile = load_nwb(file_name)
+        df_current = nwb_headDirection_session(nwbfile, settings, plot, save_report, save_pickle, ix_break)
+        if ix == 0:
+            df = df_current
+        else:
+            df.append(df_current)
+
+    return df
+
+
+
+def nwb_headDirection_session(nwbfile, settings = SETTINGS, plot=False, save_report = False, save_pickle = False, ix_break = np.inf):
     """"
     run and plot for each unit in session
     """
-    
-    occupancy = compute_hd_occupancy(nwbfile, return_hds = False, smooth = True, windowsize = 23, binsize = 1)
+
+    ## OCCUPANCY
+    # Compute     
+    occupancy = compute_hd_occupancy(
+        nwbfile, 
+        return_hds = False, 
+        smooth = True, 
+        windowsize = SETTINGS.WINDOWSIZE, 
+        binsize = SETTINGS.BINSIZE
+    )
+
+    # Verbose plot
     if plot:
         fig = plt.figure(figsize=[10,10])
         plot_hd(occupancy)
@@ -43,11 +79,70 @@ def nwb_headDirection_session(nwbfile, n_surrogates = 1000, plot=False, subject=
         plt.ylabel('')
         plt.show()
 
+    ## RUN 
+    # init dataframe & error list
+    df = None
+    error_list = []
+
+    # Run across each unit
     n_units = len(nwbfile.units)
-    for unit_ix in range(n_units):
-        print(f'Working on unit {unit_ix}...')
-        nwb_headDirection_cell(nwbfile, unit_ix, occupancy, n_surrogates, plot = True, subject=subject)
-    return 
+    for ix in range(n_units):
+
+        # break for testing
+        if ix > ix_break:
+            break
+
+        print (f'Working on unit {ix}...')
+        try:
+            # Run 
+            res = nwb_headDirection_cell(
+                nwbfile, 
+                unit_ix = ix, 
+                occupancy = occupancy,
+                n_surrogates= SETTINGS.N_SURROGATES
+
+            )
+
+            # Plot & Save
+            if save_report or save_pickle:
+                save_folder = SETTINGS.SAVE_FOLDER
+                save_subfolder = datetime.today().strftime('%Y%m%d_') + res['metadata']['session_id']
+                save_dir = os.path.abspath(os.path.join(save_folder, save_subfolder))
+                os.makedirs(save_dir, exist_ok=True)
+        
+            if save_report:
+                fig = plot_headDirection_summary_PDF(nwbfile, res, occupancy)
+                fig_name = res['metadata']['session_id'] + '_unit' + str(ix) + '.pdf'
+                plt.savefig(os.path.join(save_dir, fig_name))
+                plt.close()
+
+            if save_pickle:
+                pkl_name = res['metadata']['session_id'] + '_unit' + str(ix) + '.pickle'    
+                fpath = os.path.join(save_dir, pkl_name)
+                with open(fpath, 'wb') as handle:
+                    pickle.dump(res, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+            # Build Dataframe
+            if ix == 0:
+                df = pd.json_normalize(res, sep='.')
+            else:
+                df_current = pd.json_normalize(res, sep = '.')
+                df = df.append(df_current)
+            
+
+            error_list.append(False)
+
+        except Exception as e:
+            print('\t Error')
+            print('\t', e)
+
+            error_list.append(True)
+    
+    # for unit_ix in range(n_units):
+    #     print(f'Working on unit {unit_ix}...')
+    #     res = nwb_headDirection_cell(nwbfile, unit_ix, occupancy, n_surrogates = SETTINGS.N_SURROGATES, plot = plot)
+    
+    return df 
 
 
 def nwb_headDirection_cell(nwbfile, unit_ix, 
@@ -121,14 +216,16 @@ def nwb_headDirection_cell(nwbfile, unit_ix,
             'nspikes'                       : n_spikes_tot,
             'nspikes_nav'                   : n_spikes_navigation,
             'navtime'                       : total_time,
-            'nunits'                        : n_units,
-            'ntrials'                       : n_trials,
-            'nsurrogates'                   : n_surrogates,
+            'n_units'                       : n_units,
+            'n_trials'                      : n_trials,
+            'n_surrogates'                  : n_surrogates,
             'hd_score'                      : hd_score,
             'hd_score_norm'                 : hd_norm_score
         },
 
-        'occupancy'                     : occupancy,
+        'occupancy': {
+            'occupancy_norm'                : occupancy,
+        },
 
         'head_direction' : {
             'hd_score'                      : hd_score,
@@ -150,9 +247,7 @@ def nwb_headDirection_cell(nwbfile, unit_ix,
             'mean_firing_rates_over_time'   : mean_firing_rates_over_time,
             'mean_firing_rate'              : mean_firing_rate
 
-        },
-
-        'hd_plot'                       :   hd_ax
+        }
     }
     return res
         
@@ -184,31 +279,31 @@ def headDirection_report(nwbfile, unit_ix):
 # WIP
 ####################
 
-def compute_bootstrap_ci95_from_surrogates(surrogates):
-    """
-    Compute ci95 from surrogates using seaborn bootstrapping method
-    """
+# def compute_bootstrap_ci95_from_surrogates(surrogates):
+#     """
+#     Compute ci95 from surrogates using seaborn bootstrapping method
+#     """
 
-    num_bins = surrogates.shape[1]
-    bisize = 360 / num_bins
-    df = pd.DataFrame(surrogates).melt()
-
-
-    df['variable'] = np.radians(df['variable']*binsize)
-    #ax = sns.lineplot
+#     num_bins = surrogates.shape[1]
+#     bisize = 360 / num_bins
+#     df = pd.DataFrame(surrogates).melt()
 
 
-def compare_hd_histogram_to_surrogates(hd_histogram, surrogates):
-    """
-    For each bin, compare the actual firing rate to the firing rates determined 
-    from shuffling for each. 
+#     df['variable'] = np.radians(df['variable']*binsize)
+#     #ax = sns.lineplot
+
+
+# def compare_hd_histogram_to_surrogates(hd_histogram, surrogates):
+#     """
+#     For each bin, compare the actual firing rate to the firing rates determined 
+#     from shuffling for each. 
     
-    Bins in which the firing rate of the real histogram are above the 95% confidence 
-    interval of the surrogates are considered significant
-    """
+#     Bins in which the firing rate of the real histogram are above the 95% confidence 
+#     interval of the surrogates are considered significant
+#     """
     
 
-    ci95 = compute_ci95_from_surrogates(surrogates)
+#     ci95 = compute_ci95_from_surrogates(surrogates)
     
 
     
