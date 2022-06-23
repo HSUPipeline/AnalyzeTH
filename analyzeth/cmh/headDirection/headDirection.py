@@ -32,26 +32,34 @@ import glob
 # Analysis Settings
 import analyzeth.cmh.headDirection.settings_HD as SETTINGS
 
-def nwb_headDirection_group(data_folder, settings = SETTINGS, plot=False, save_report = False, save_pickle = False, ix_break = np.inf):
+def nwb_headDirection_group(data_folder, 
+        settings = SETTINGS, 
+        plot=False, 
+        save_report = False, 
+        save_pickle = False, 
+        ix_break = np.inf,
+        skip_nwbfiles = []
+    ):
     """
     Grep all .nwbs in dir and NOT subdirs and run analysis on all
     """
 
     files = glob.glob(data_folder +'*.nwb')
+  
     
-    df = None
-
     for ix, file_name in enumerate(files):
         print ('------ Starting Session ' + str(file_name) + ' -------')
 
-        nwbfile = load_nwb(file_name)
-        df_current = nwb_headDirection_session(nwbfile, settings, plot, save_report, save_pickle, ix_break)
-        if ix == 0:
-            df = df_current
-        else:
-            df.append(df_current)
+        if os.path.basename(file_name) in skip_nwbfiles:
+            print (f'Skipping file {file_name}')
+            continue 
 
-    return df
+        # run 
+        nwbfile = load_nwb(file_name)
+        nwb_headDirection_session(nwbfile, settings, plot, save_report, save_pickle, ix_break)
+
+
+    return 
 
 
 
@@ -81,8 +89,6 @@ def nwb_headDirection_session(nwbfile, settings = SETTINGS, plot=False, save_rep
 
     ## RUN 
     # init dataframe & error list
-    df = None
-    error_list = []
 
     # Run across each unit
     n_units = len(nwbfile.units)
@@ -92,7 +98,14 @@ def nwb_headDirection_session(nwbfile, settings = SETTINGS, plot=False, save_rep
         if ix > ix_break:
             break
 
+    
         print (f'Working on unit {ix}...')
+        
+        save_folder = SETTINGS.SAVE_FOLDER
+        save_subfolder = datetime.today().strftime('%Y%m%d_') + nwbfile.session_id
+        save_dir = os.path.abspath(os.path.join(save_folder, save_subfolder))
+        os.makedirs(save_dir, exist_ok=True)
+        
         try:
             # Run 
             res = nwb_headDirection_cell(
@@ -100,20 +113,14 @@ def nwb_headDirection_session(nwbfile, settings = SETTINGS, plot=False, save_rep
                 unit_ix = ix, 
                 occupancy = occupancy,
                 n_surrogates= SETTINGS.N_SURROGATES
-
             )
 
             # Plot & Save
-            if save_report or save_pickle:
-                save_folder = SETTINGS.SAVE_FOLDER
-                save_subfolder = datetime.today().strftime('%Y%m%d_') + res['metadata']['session_id']
-                save_dir = os.path.abspath(os.path.join(save_folder, save_subfolder))
-                os.makedirs(save_dir, exist_ok=True)
-        
             if save_report:
                 fig = plot_headDirection_summary_PDF(nwbfile, res, occupancy)
                 fig_name = res['metadata']['session_id'] + '_unit' + str(ix) + '.pdf'
-                plt.savefig(os.path.join(save_dir, fig_name))
+                fpath = os.path.join(save_dir, fig_name)
+                plt.savefig(fpath)
                 plt.close()
 
             if save_pickle:
@@ -122,27 +129,23 @@ def nwb_headDirection_session(nwbfile, settings = SETTINGS, plot=False, save_rep
                 with open(fpath, 'wb') as handle:
                     pickle.dump(res, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-            # Build Dataframe
-            if ix == 0:
-                df = pd.json_normalize(res, sep='.')
-            else:
-                df_current = pd.json_normalize(res, sep = '.')
-                df = df.append(df_current)
-            
-
-            error_list.append(False)
+            # Build and save Dataframe
+            df = pd.json_normalize(res, sep='.')
+            df_name = res['metadata']['session_id'] + '_unit' + str(ix) + '_DF.feather'
+            fpath = os.path.join(save_dir, df_name)
+            df.to_feather(fpath)
 
         except Exception as e:
             print('\t Error')
             print('\t', e)
+            
+            # Save dummy
+            df = pd.DataFrame({'ERROR': e})
+            df_name = nwbfile.session_id + '_unit' + str(ix) + '_DF.ERROR'
+            fpath = os.path.join(save_dir, df_name)
+            df.to_feather(fpath)
 
-            error_list.append(True)
-    
-    # for unit_ix in range(n_units):
-    #     print(f'Working on unit {unit_ix}...')
-    #     res = nwb_headDirection_cell(nwbfile, unit_ix, occupancy, n_surrogates = SETTINGS.N_SURROGATES, plot = plot)
-    
-    return df 
+    return 
 
 
 def nwb_headDirection_cell(nwbfile, unit_ix, 
