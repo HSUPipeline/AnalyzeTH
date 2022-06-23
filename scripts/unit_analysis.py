@@ -25,11 +25,13 @@ from spiketools.plts.data import plot_bar, plot_polar_hist, plot_text
 from spiketools.plts.stats import plot_surrogates
 from spiketools.plts.annotate import color_pval
 from spiketools.stats.permutations import compute_surrogate_stats
-from spiketools.spatial.occupancy import compute_occupancy, compute_bin_edges, compute_bin_assignment
+from spiketools.spatial.occupancy import (compute_occupancy, compute_bin_edges,
+                                          compute_bin_assignment, compute_bin_firing)
 from spiketools.spatial.information import compute_spatial_information
 from spiketools.utils.data import get_range
 from spiketools.utils.trials import (epoch_spikes_by_event, epoch_spikes_by_range,
                                      epoch_data_by_range)
+from spiketools.utils.base import select_from_list
 
 # Import settings from local file
 from settings import (TASK, PATHS, IGNORE, UNIT_SETTINGS, METHOD_SETTINGS,
@@ -38,8 +40,7 @@ from settings import (TASK, PATHS, IGNORE, UNIT_SETTINGS, METHOD_SETTINGS,
 # Import local code
 import sys
 sys.path.append('../code')
-from utils import select_from_list
-from analysis import calc_trial_frs, get_spike_positions, compute_bin_firing#, get_spike_heading
+from analysis import calc_trial_frs, get_spike_positions#, get_spike_heading
 from place import get_trial_place, compute_place_bins, create_df_place, fit_anova_place
 from target import compute_spatial_target_bins, get_trial_target, create_df_target, fit_anova_target
 from serial import compute_serial_position_fr, create_df_serial, fit_anova_serial
@@ -194,7 +195,7 @@ def main():
 
                 # Compute spatial bin assignments & binned firing, and normalize by occupancy
                 x_binl, y_binl = compute_bin_assignment(spike_positions, x_bin_edges, y_bin_edges)
-                bin_firing = compute_bin_firing(x_binl, y_binl, ANALYSIS_SETTINGS['PLACE_BINS'])
+                bin_firing = compute_bin_firing(ANALYSIS_SETTINGS['PLACE_BINS'], x_binl, y_binl)
                 bin_firing = bin_firing / occ
 
                 # Get head direction for each spike
@@ -213,7 +214,7 @@ def main():
                 ch_ybin = ch_ybin - 1
 
                 # Compute chest occupancy
-                chest_occupancy = compute_bin_firing(ch_xbin, ch_ybin, ANALYSIS_SETTINGS['CHEST_BINS'])
+                chest_occupancy = compute_bin_firing(ANALYSIS_SETTINGS['CHEST_BINS'], ch_xbin, ch_ybin)
 
                 ## STATISTICS
 

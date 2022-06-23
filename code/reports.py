@@ -2,11 +2,13 @@
 
 import numpy as np
 
-from spiketools.measures import compute_spike_rate
+from spiketools.measures import compute_firing_rate
 from spiketools.utils.timestamps import convert_sec_to_min
 
 ###################################################################################################
 ###################################################################################################
+
+## GROUP REPORTS
 
 def create_group_info(summary):
     """Create a dictionary of group information."""
@@ -43,6 +45,7 @@ def create_group_sessions_str(summary):
 
     return out
 
+## SESSION REPORTS
 
 def create_subject_info(nwbfile):
     """Create a dictionary of subject information."""
@@ -114,6 +117,8 @@ def create_behav_str(behav_info):
     return string
 
 
+## UNIT REPORTS
+
 def create_unit_info(unit):
     """Create a dictionary of unit information."""
 
@@ -122,7 +127,7 @@ def create_unit_info(unit):
     unit_info = {}
     unit_info['wvID'] = int(unit['wvID'].values[0])
     unit_info['n_spikes'] = len(spikes)
-    unit_info['firing_rate'] = float(compute_spike_rate(spikes))
+    unit_info['firing_rate'] = float(compute_firing_rate(spikes))
     unit_info['first_spike'] = spikes[0]
     unit_info['last_spike'] = spikes[-1]
     unit_info['location'] = unit['location'].values[0]
