@@ -8,12 +8,12 @@ from matplotlib import gridspec
 
 from pynwb import NWBHDF5IO
 
-from convnwb.io import get_files, save_json
+from convnwb.io import get_files, save_json, load_nwbfile
 
 from spiketools.measures import compute_spike_rate
 from spiketools.spatial.occupancy import compute_occupancy
 from spiketools.plts.data import plot_bar, plot_hist, plot_polar_hist, plot_text
-from spiketools.plts.space import plot_heatmap, plot_positions
+from spiketools.plts.spatial import plot_heatmap, plot_positions
 from spiketools.plts.spikes import plot_unit_frs
 from spiketools.utils.trials import epoch_data_by_range
 
@@ -23,7 +23,8 @@ from settings import TASK, PATHS, IGNORE, ANALYSIS_SETTINGS
 # Import local code
 import sys
 sys.path.append('../code')
-from reports import *
+from reports import (create_subject_info, create_subject_str, create_position_str,
+                     create_behav_info, create_behav_str)
 
 ###################################################################################################
 ###################################################################################################
@@ -47,8 +48,8 @@ def main():
         # Load file and prepare data
         print('Running session analysis: ', nwbfile)
 
-        # Get subject name & load NWB file
-        nwbfile = NWBHDF5IO(str(PATHS['DATA'] / nwbfile), 'r').read()
+        # Load NWB file
+        nwbfile, io = load_nwbfile(nwbfile, PATHS['DATA'], return_io=True)
 
         # Get the subject & session ID from file
         subj_id = nwbfile.subject.subject_id
@@ -179,6 +180,9 @@ def main():
 
         # Save out unit results
         save_json(results, name + '.json', folder=str(PATHS['RESULTS'] / 'sessions' / TASK))
+
+        # Close the nwbfile
+        io.close()
 
     print('\n\nCOMPLETED SESSION ANALYSES\n\n')
 

@@ -6,7 +6,7 @@ from matplotlib import gridspec
 
 from pynwb import NWBHDF5IO
 
-from convnwb.io import get_files
+from convnwb.io import get_files, load_nwbfile
 
 from spiketools.plts.data import plot_hist, plot_text
 
@@ -48,8 +48,7 @@ def main():
             continue
 
         # Load NWB file
-        io = NWBHDF5IO(str(PATHS['DATA'] / nwbfile), 'r')
-        nwbfile = io.read()
+        nwbfile, io = load_nwbfile(nwbfile, PATHS['DATA'], return_io=True)
 
         # Get the subject & session ID from file
         subj_id = nwbfile.subject.subject_id
@@ -62,6 +61,9 @@ def main():
         summary['n_keep'].append(sum(nwbfile.units.keep[:]))
         summary['error'].append(np.median(nwbfile.trials.error[:]))
         summary['correct'].append(np.mean(nwbfile.trials.correct[:]))
+
+        # Close the nwbfile
+        io.close()
 
     # Collect information of interest
     group_info = create_group_info(summary)

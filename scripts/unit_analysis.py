@@ -10,7 +10,8 @@ from scipy.stats import sem, ttest_rel
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
-from pynwb import NWBHDF5IO
+from convnwb.io import load_nwbfile
+
 #from pingouin import convert_angles, circ_rayleigh
 
 from convnwb.io import get_files, save_json, save_txt
@@ -18,7 +19,7 @@ from convnwb.io import get_files, save_json, save_txt
 from spiketools.measures import compute_isis
 from spiketools.stats.shuffle import shuffle_spikes
 from spiketools.plts.spikes import plot_isis
-from spiketools.plts.space import plot_positions, plot_heatmap
+from spiketools.plts.spatial import plot_positions, plot_heatmap
 from spiketools.plts.trials import plot_rasters
 from spiketools.plts.data import plot_bar, plot_polar_hist, plot_text
 from spiketools.plts.stats import plot_surrogates
@@ -38,11 +39,11 @@ from settings import (TASK, PATHS, IGNORE, UNIT_SETTINGS, METHOD_SETTINGS,
 import sys
 sys.path.append('../code')
 from utils import select_from_list
-from analysis import calc_trial_frs, get_spike_positions, compute_bin_firing, get_spike_heading
+from analysis import calc_trial_frs, get_spike_positions, compute_bin_firing#, get_spike_heading
 from place import get_trial_place, compute_place_bins, create_df_place, fit_anova_place
 from target import compute_spatial_target_bins, get_trial_target, create_df_target, fit_anova_target
 from serial import compute_serial_position_fr, create_df_serial, fit_anova_serial
-from reports import *
+from reports import create_unit_info, create_unit_str
 
 ###################################################################################################
 ###################################################################################################
@@ -73,8 +74,8 @@ def main():
         # Print out status
         print('\nRunning unit analysis: ', nwbfilename)
 
-        # Get subject name & load NWB file
-        nwbfile = NWBHDF5IO(str(PATHS['DATA'] / nwbfilename), 'r').read()
+        # Load NWB file
+        nwbfile, io = load_nwbfile(nwbfile, PATHS['DATA'], return_io=True)
 
         # Get the subject & session ID from file
         subj_id = nwbfile.subject.subject_id
@@ -223,7 +224,7 @@ def main():
 
                 # Place cell analysis
                 if METHOD_SETTINGS['PLACE'] == 'INFO':
-                    place_value = compute_spatial_information(spike_xs, spike_ys, [x_bin_edges, y_bin_edges], occ)
+                    place_value = compute_spatial_information(bin_firing, occ)
                 if METHOD_SETTINGS['PLACE'] == 'ANOVA':
                     place_trial = get_trial_place(spikes, nwbfile.trials, ANALYSIS_SETTINGS['PLACE_BINS'],
                                                   ptimes, positions, speed, x_bin_edges, y_bin_edges, occ_kwargs)
@@ -234,7 +235,7 @@ def main():
                     spikes, nav_starts, chest_openings, chest_trials, ptimes, positions,
                     ANALYSIS_SETTINGS['CHEST_BINS'], ch_xbin, ch_ybin)
                 if METHOD_SETTINGS['TARGET'] == 'INFO':
-                    target_value = _compute_spatial_information(target_bins, chest_occupancy)
+                    target_value = compute_spatial_information(target_bins, chest_occupancy)
                 if METHOD_SETTINGS['TARGET'] == 'ANOVA':
                     target_trial = get_trial_target(spikes, nav_starts, ANALYSIS_SETTINGS['CHEST_BINS'],
                                                     chest_openings, chest_trials, ch_xbin, ch_ybin, ptimes, positions)
@@ -259,9 +260,8 @@ def main():
 
                     # PLACE
                     if METHOD_SETTINGS['PLACE'] == 'INFO':
-                        s_spike_xs, s_spike_ys = get_spike_positions(shuffle, ptimes, positions)
-                        place_surrs[ind] = compute_spatial_information(s_spike_xs, s_spike_ys,
-                                                                          [x_bin_edges, y_bin_edges], occ)
+                        surr_bin_firing = compute_place_bins(stimes, bins, ptimes, positions, x_bin_edges, y_bin_edges)
+                        place_surrs[ind] = compute_spatial_information(bin_firing, occ, normalize=True)
                     if METHOD_SETTINGS['PLACE'] == 'ANOVA':
                         s_place_trial = get_trial_place(shuffle, nwbfile.trials, ANALYSIS_SETTINGS['PLACE_BINS'],
                                                         ptimes, positions, speed, x_bin_edges, y_bin_edges, occ_kwargs)
@@ -272,7 +272,7 @@ def main():
                         s_target_bins = compute_spatial_target_bins(shuffle, nav_starts, chest_openings, chest_trials,
                                                                     ptimes, positions, ANALYSIS_SETTINGS['CHEST_BINS'],
                                                                     ch_xbin, ch_ybin)
-                        target_surrs[ind] = _compute_spatial_information(s_target_bins, chest_occupancy)
+                        target_surrs[ind] = compute_spatial_information(s_target_bins, chest_occupancy)
                     if METHOD_SETTINGS['TARGET'] == 'ANOVA':
                         s_target_trial = get_trial_target(shuffle, nav_starts, ANALYSIS_SETTINGS['CHEST_BINS'],
                                                           chest_openings, chest_trials, ch_xbin, ch_ybin, ptimes, positions)
@@ -423,6 +423,9 @@ def main():
                     raise
                 print('\t\tissue running unit # {}'.format(unit_ind))
                 save_txt(traceback.format_exc(), name, folder=str(PATHS['RESULTS'] / 'units' / TASK / 'zFailed'))
+
+        # Close the nwbfile
+        io.close()
 
     print('\n\nCOMPLETED UNIT ANALYSES\n\n')
 
