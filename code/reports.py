@@ -61,7 +61,7 @@ def create_subject_info(nwbfile):
     subject_info['session_id'] = nwbfile.session_id
     subject_info['trials_start'] = st
     subject_info['trials_end'] = en
-    subject_info['length'] = float(convert_sec_to_min(en))
+    subject_info['session_length'] = float(convert_sec_to_min(en))
 
     return subject_info
 
@@ -125,6 +125,7 @@ def create_unit_info(unit):
     spikes = unit['spike_times'].values[0]
 
     unit_info = {}
+
     unit_info['wvID'] = int(unit['wvID'].values[0])
     unit_info['n_spikes'] = len(spikes)
     unit_info['firing_rate'] = float(compute_firing_rate(spikes))
