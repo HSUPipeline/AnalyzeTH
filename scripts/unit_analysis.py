@@ -1,6 +1,4 @@
-"""Run TH analysis across all units.
-TODO: update script based on notebook fixes / based on spiketools updates.
-"""
+"""Run TH analysis across all units."""
 
 import warnings
 import traceback
@@ -14,7 +12,7 @@ from convnwb.io import load_nwbfile
 
 #from pingouin import convert_angles, circ_rayleigh
 
-from convnwb.io import get_files, save_json, save_txt
+from convnwb.io import get_files, save_json, save_txt, file_in_list
 
 from spiketools.measures import compute_isis
 from spiketools.stats.shuffle import shuffle_spikes
@@ -50,7 +48,7 @@ from reports import create_unit_info, create_unit_str
 ###################################################################################################
 
 def main():
-    """Run unit analyses."""
+    """Run analyses across all units."""
 
     print('\n\nANALYZING UNIT DATA - {}\n\n'.format(TASK))
 
@@ -63,12 +61,17 @@ def main():
     failed_files = get_files(PATHS['RESULTS'] / 'units' / TASK / 'zFailed',
                              select='json', drop_extensions=True)
 
+    # Define analyses to run (that will be surrogate tested)
+    surr_analyses = ['place_info', 'place_anova',
+                     'target_info', 'target_anova',
+                     'sp_anova']
+
     for nwbfilename in nwbfiles:
 
         ## DATA LOADING
 
         # Check and ignore files set to ignore
-        if nwbfilename.split('.')[0] in IGNORE:
+        if file_in_list(nwbfilename, IGNORE):
             print('\nSkipping file (set to ignore): ', nwbfilename)
             continue
 
@@ -77,10 +80,6 @@ def main():
 
         # Load NWB file
         nwbfile, io = load_nwbfile(nwbfile, PATHS['DATA'], return_io=True)
-
-        # Get the subject & session ID from file
-        subj_id = nwbfile.subject.subject_id
-        session_id = nwbfile.session_id
 
         ## GET DATA
 
@@ -138,34 +137,40 @@ def main():
         for unit_ind in keep_inds:
 
             # Initialize output unit file name & output dictionary
-            name = session_id + '_U' + str(unit_ind).zfill(2)
-            results = {}
+            name = nwbfile.session_id + '_U' + str(unit_ind).zfill(2)
 
             # Check if unit already run
-            if UNIT_SETTINGS['SKIP_ALREADY_RUN'] and name in output_files:
+            if UNIT_SETTINGS['SKIP_ALREADY_RUN'] and file_in_list(name, output_files):
                 print('\tskipping unit (already run): \tU{:02d}'.format(unit_ind))
                 continue
 
-            if UNIT_SETTINGS['SKIP_FAILED'] and name in failed_files:
+            if UNIT_SETTINGS['SKIP_FAILED'] and file_in_list(name, failed_files):
                 print('\tskipping unit (failed): \tU{:02d}'.format(unit_ind))
                 continue
 
             print('\trunning unit: \t\t\tU{:02d}'.format(unit_ind))
 
-            # Extract spikes for a unit of interest
-            spikes = nwbfile.units.get_unit_spike_times(unit_ind)
-
             try:
+
+                # Collect information of interest
+                unit_info = create_unit_info(nwbfile.units[unit_ind])
+
+                # Extract spikes for a unit of interest
+                spikes = nwbfile.units.get_unit_spike_times(unit_ind)
+
+                # Initialize results and add unit metadata
+                results = {}
+                results['uid'] = int(unit_ind)
+                results['session_id'] = nwbfile.session_id
+                results['subject_id'] = nwbfile.subject.subject_id
+                for field in ['wvID', 'keep', 'n_spikes', 'firing_rate'
+                              'cluster', 'channel', 'location']:
+                    results[field] = unit_info[field]
 
                 ## Compute measures
 
                 # Get the spiking data for each trial
                 all_trials = epoch_spikes_by_range(spikes, trial_starts, trial_stops, reset=True)
-
-                # Create shuffled time series for comparison
-                times_shuffle = shuffle_spikes(spikes,
-                                               SURROGATE_SETTINGS['SHUFFLE_APPROACH'],
-                                               SURROGATE_SETTINGS['N_SURROGATES'])
 
                 # Compute firing related to chest presentation
                 all_chests = epoch_spikes_by_event(spikes, np.concatenate(chest_openings),
@@ -219,84 +224,90 @@ def main():
                 ## STATISTICS
 
                 # Compute t-tests for chest related firing
-                fr_t_val_all, fr_p_val_all = ttest_rel(*calc_trial_frs(all_chests, average=False))
-                fr_t_val_full, fr_p_val_full = ttest_rel(*calc_trial_frs(full_trials, average=False))
-                fr_t_val_empt, fr_p_val_empt = ttest_rel(*calc_trial_frs(empty_trials, average=False))
+                results['fr_t_val_all'], results['fr_p_val_all'] = \
+                    ttest_rel(*calc_trial_frs(all_chests, average=False))
+                results['fr_t_val_empt'], results['fr_p_val_empt'] = \
+                    ttest_rel(*calc_trial_frs(full_trials, average=False))
+                results['fr_t_val_full'], results['fr_p_val_full'] = \
+                    ttest_rel(*calc_trial_frs(empty_trials, average=False))
 
                 # Place cell analysis
                 if METHOD_SETTINGS['PLACE'] == 'INFO':
-                    place_value = compute_spatial_information(bin_firing, occ)
+                    results['place_info'] = compute_spatial_information(bin_firing, occ)
                 if METHOD_SETTINGS['PLACE'] == 'ANOVA':
                     place_trial = get_trial_place(spikes, nwbfile.trials, ANALYSIS_SETTINGS['PLACE_BINS'],
                                                   ptimes, positions, speed, x_bin_edges, y_bin_edges, occ_kwargs)
-                    place_value = fit_anova_place(create_df_place(place_trial, drop_na=True))
+                    results['place_anova'] = fit_anova_place(create_df_place(place_trial, drop_na=True))
 
                 # Target cell analysis
                 target_bins = compute_spatial_target_bins(\
                     spikes, nav_starts, chest_openings, chest_trials, ptimes, positions,
                     ANALYSIS_SETTINGS['CHEST_BINS'], ch_xbin, ch_ybin)
                 if METHOD_SETTINGS['TARGET'] == 'INFO':
-                    target_value = compute_spatial_information(target_bins, chest_occupancy)
+                    results['target_info'] = compute_spatial_information(target_bins, chest_occupancy)
+
                 if METHOD_SETTINGS['TARGET'] == 'ANOVA':
                     target_trial = get_trial_target(spikes, nav_starts, ANALYSIS_SETTINGS['CHEST_BINS'],
                                                     chest_openings, chest_trials, ch_xbin, ch_ybin, ptimes, positions)
-                    target_value = fit_anova_target(create_df_target(target_trial))
+                    results['target_anova'] = fit_anova_target(create_df_target(target_trial))
 
                 # Serial position analysis
                 sp_all_frs = compute_serial_position_fr(spikes, nav_starts, chest_openings, chest_trials)
-                sp_value = fit_anova_serial(create_df_serial(sp_all_frs))
+                results['sp_anova'] = fit_anova_serial(create_df_serial(sp_all_frs))
 
                 # Compute measures for head direction
-                #hd_zstat, hd_pstat = circ_rayleigh(convert_angles(spike_hds))
+                # results['hd_zstat'], results['hd_pstat']  = circ_rayleigh(convert_angles(spike_hds))
 
                 ## SURROGATES
 
-                # Compute surrogate measures
-                place_surrs = np.zeros(SURROGATE_SETTINGS['N_SURROGATES'])
-                target_surrs = np.zeros(SURROGATE_SETTINGS['N_SURROGATES'])
-                sp_surrs = np.zeros(SURROGATE_SETTINGS['N_SURROGATES'])
-                #hd_surrs = np.zeros(SURROGATE_SETTINGS['N_SURROGATES'])
+                # Create shuffled time series for comparison
+                times_shuffle = shuffle_spikes(spikes,
+                                               SURROGATE_SETTINGS['SHUFFLE_APPROACH'],
+                                               SURROGATE_SETTINGS['N_SURROGATES'])
+
+                # Initialize to store surrogate analysis outputs
+                surrs = {analysis : np.zeros(SURROGATE_SETTINGS['N_SURROGATES']) for analysis in surr_analyses}
 
                 for ind, shuffle in enumerate(times_shuffle):
 
                     # PLACE
                     if METHOD_SETTINGS['PLACE'] == 'INFO':
                         surr_bin_firing = compute_place_bins(stimes, bins, ptimes, positions, x_bin_edges, y_bin_edges)
-                        place_surrs[ind] = compute_spatial_information(bin_firing, occ, normalize=True)
+                        surrs['place_info'][ind] = compute_spatial_information(bin_firing, occ, normalize=True)
                     if METHOD_SETTINGS['PLACE'] == 'ANOVA':
                         s_place_trial = get_trial_place(shuffle, nwbfile.trials, ANALYSIS_SETTINGS['PLACE_BINS'],
                                                         ptimes, positions, speed, x_bin_edges, y_bin_edges, occ_kwargs)
-                        place_surrs[ind] = fit_anova_place(create_df_place(s_place_trial, drop_na=True))
+                        surrs['place_anova'][ind] = fit_anova_place(create_df_place(s_place_trial, drop_na=True))
 
                     # TARGET
                     if METHOD_SETTINGS['TARGET'] == 'INFO':
                         s_target_bins = compute_spatial_target_bins(shuffle, nav_starts, chest_openings, chest_trials,
                                                                     ptimes, positions, ANALYSIS_SETTINGS['CHEST_BINS'],
                                                                     ch_xbin, ch_ybin)
-                        target_surrs[ind] = compute_spatial_information(s_target_bins, chest_occupancy)
+                        surrs['target_info'][ind] = compute_spatial_information(s_target_bins, chest_occupancy)
                     if METHOD_SETTINGS['TARGET'] == 'ANOVA':
                         s_target_trial = get_trial_target(shuffle, nav_starts, ANALYSIS_SETTINGS['CHEST_BINS'],
                                                           chest_openings, chest_trials, ch_xbin, ch_ybin, ptimes, positions)
-                        target_surrs[ind] = fit_anova_target(create_df_target(s_target_trial))
+                        surrs['target_anova'][ind] = fit_anova_target(create_df_target(s_target_trial))
 
                     # SERIAL POSITION
                     s_sp_all_frs = compute_serial_position_fr(shuffle, nav_starts, chest_openings, chest_trials)
-                    sp_surrs[ind] = fit_anova_serial(create_df_serial(s_sp_all_frs))
+                    surrs['sp_anova'][ind] = fit_anova_serial(create_df_serial(s_sp_all_frs))
 
                     # HEAD DIRECTION
                     #s_spike_hds = get_spike_heading(shuffle, hd_times, hd_degrees)
-                    #hd_surrs[ind] = circ_rayleigh(convert_angles(s_spike_hds))[0]
+                    #surrs['hd_stat'][ind] = circ_rayleigh(convert_angles(s_spike_hds))[0]
 
                 # Compute surrogate statistics
-                place_p_val, place_z_score = compute_surrogate_stats(place_value, place_surrs, False, False)
-                target_p_val, target_z_score = compute_surrogate_stats(target_value, target_surrs, False, False)
-                sp_p_val, sp_z_score = compute_surrogate_stats(sp_value, sp_surrs, False, False)
-                #hd_p_val, hd_z_score = compute_surrogate_stats(hd_zstat, hd_surrs, False, False)
+                for analysis in surr_analyses:
+                    results[analysis + '_surr_p_val'], results[analysis + '_surr_z_score'] = \
+                        compute_surrogate_stats(results[analysis], surrs[analysis])
 
-                # Collect information of interest
-                unit_info = create_unit_info(nwbfile.units[unit_ind])
+                # Save out unit results
+                save_json(results, name + '.json', folder=str(PATHS['RESULTS'] / 'units' / TASK))
 
-                ## MAKE REPORT
+                ### MAKE REPORT
+
                 # Initialize figure
                 _ = plt.figure(figsize=(15, 18))
                 grid = gridspec.GridSpec(6, 3, wspace=0.4, hspace=1.)
@@ -319,21 +330,21 @@ def main():
                 ax10 = plt.subplot(grid[1:3, 0:2])
                 plot_rasters(all_chests, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'],
                              vline=0, figsize=(10, 7), ax=ax10)
-                ax10.set_title(title_str.format('All Chests', fr_pre_all, fr_post_all, fr_t_val_all, fr_p_val_all),
-                               color=color_pval(fr_p_val_all))
+                ax10.set_title(title_str.format('All Chests', fr_pre_all, fr_post_all, fr_t_val_all, results['fr_p_val_all']),
+                               color=color_pval(results['fr_p_val_all']))
 
                 # 12&22: Compare Empty & Full chest trials
                 # Empty chest trials
                 ax12 = plt.subplot(grid[1, 2])
                 plot_rasters(empty_trials, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'], vline=0, ax=ax12)
-                ax12.set_title(title_str.format('Empty', fr_pre_empt, fr_post_empt, fr_t_val_empt, fr_p_val_empt),
-                               color=color_pval(fr_p_val_empt), fontdict={'fontsize' : 14})
+                ax12.set_title(title_str.format('Empty', fr_pre_empt, fr_post_empt, fr_t_val_empt, results['fr_p_val_empt']),
+                               color=color_pval(results['fr_p_val_empt']), fontdict={'fontsize' : 14})
 
                 # Full chest trials
                 ax22 = plt.subplot(grid[2, 2])
                 plot_rasters(full_trials, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'], vline=0, ax=ax22)
-                ax22.set_title(title_str.format('Full', fr_pre_full, fr_post_full, fr_t_val_full, fr_p_val_full),
-                               color=color_pval(fr_p_val_full), fontdict={'fontsize' : 14})
+                ax22.set_title(title_str.format('Full', fr_pre_full, fr_post_full, fr_t_val_full, results['fr_p_val_full']),
+                               color=color_pval(results['fr_p_val_full']), fontdict={'fontsize' : 14})
 
                 # ax30: positional firing
                 ax30 = plt.subplot(grid[3:5, 0])
@@ -354,7 +365,10 @@ def main():
 
                 # ax42: place surrogates
                 ax42 = plt.subplot(grid[4, 2])
-                plot_surrogates(place_surrs, place_value, place_p_val, ax=ax42)
+                #plot_surrogates(surrs['place_info'], results['place_info'],
+                #                results['place_info_surr_p_val'], ax=ax42)
+                plot_surrogates(surrs['place_anova'], results['place_anova'],
+                                results['place_anova_surr_p_val'], ax=ax42)
                 ax42.set_title('Place Surrogates', color=color_pval(place_p_val))
 
                 # ax50: firing rates across trial segments
@@ -369,55 +383,21 @@ def main():
 
                 # ax52: target surrogates
                 ax52 = plt.subplot(grid[5, 2])
-                plot_surrogates(target_surrs, target_value, target_p_val, ax=ax52)
+                #plot_surrogates(surrs['target_info'], results['target_info'],
+                #                results['target_info_surr_p_val'], ax=ax52)
+                plot_surrogates(surrs['target_anova'], results['target_anova'],
+                                results['target_anova_surr_p_val'], ax=ax52)
+
                 ax52.set_title('Target Surrogates', color=color_pval(target_p_val))
 
                 # Add super title to the report
-                suptitle = 'Unit Report: {}-U{}'.format(session_id, unit_ind)
+                suptitle = 'Unit Report: {}-U{}'.format(nwbfile.session_id, unit_ind)
                 plt.suptitle(suptitle, fontsize=24, y=0.95);
 
                 # Save out report
                 report_name = 'unit_report_' + name + '.pdf'
                 plt.savefig(PATHS['REPORTS'] / 'units' / TASK / report_name)
                 plt.close()
-
-                ## COLLECT RESULTS
-
-                results['uid'] = int(unit_ind)
-                results['session'] = session_id
-                results['subject'] = subj_id
-                results['wvID'] = unit_info['wvID']
-                results['keep'] = unit_info['keep']
-                results['cluster'] = unit_info['cluster']
-                results['channel'] = unit_info['channel']
-                results['location'] = unit_info['location']
-                results['n_spikes'] = unit_info['n_spikes']
-                results['firing_rate'] = unit_info['firing_rate']
-
-                results['fr_t_val_all'] = fr_t_val_all
-                results['fr_p_val_all'] = fr_p_val_all
-                results['fr_t_val_empt'] = fr_t_val_empt
-                results['fr_p_val_empt'] = fr_p_val_empt
-                results['fr_t_val_full'] = fr_t_val_full
-                results['fr_p_val_full'] = fr_p_val_full
-
-                results['place_value'] = place_value
-                results['place_p_val'] = place_p_val
-                results['place_z_score'] = place_z_score
-                results['target_value'] = target_value
-                results['target_p_val'] = target_p_val
-                results['target_z_score'] = target_z_score
-                results['sp_value'] = sp_value
-                results['sp_p_val'] = sp_p_val
-                results['sp_z_score'] = sp_z_score
-
-                # results['hd_zstat'] = hd_zstat
-                # results['hd_pstat'] = hd_pstat
-                # results['hd_p'] = hd_p_val
-                # results['hd_z'] = hd_z_score
-
-                # Save out unit results
-                save_json(results, name + '.json', folder=str(PATHS['RESULTS'] / 'units' / TASK))
 
             except Exception as excp:
                 if not UNIT_SETTINGS['CONTINUE_ON_FAIL']:

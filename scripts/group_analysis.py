@@ -6,7 +6,7 @@ from matplotlib import gridspec
 
 from pynwb import NWBHDF5IO
 
-from convnwb.io import get_files, load_nwbfile
+from convnwb.io import get_files, load_nwbfile, file_in_list
 
 from spiketools.plts.data import plot_hist, plot_text
 
@@ -39,23 +39,20 @@ def main():
         'correct' : []
     }
 
-    for nwbfile in nwbfiles:
+    for nwbfilename in nwbfiles:
 
         ## LOADING & DATA ACCESSING
+
         # Check and ignore files set to ignore
-        if nwbfile.split('.')[0] in IGNORE:
-            print('Ignoring file: ', nwbfile)
+        if file_in_list(nwbfilename, IGNORE):
+            print('\nSkipping file (set to ignore): ', nwbfilename)
             continue
 
         # Load NWB file
-        nwbfile, io = load_nwbfile(nwbfile, PATHS['DATA'], return_io=True)
-
-        # Get the subject & session ID from file
-        subj_id = nwbfile.subject.subject_id
-        session_id = nwbfile.session_id
+        nwbfile, io = load_nwbfile(nwbfilename, PATHS['DATA'], return_io=True)
 
         # Collect summary information
-        summary['ids'].append(session_id)
+        summary['ids'].append(nwbfile.session_id)
         summary['n_trials'].append(len(nwbfile.trials))
         summary['n_units'].append(len(nwbfile.units))
         summary['n_keep'].append(sum(nwbfile.units.keep[:]))

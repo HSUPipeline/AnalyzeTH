@@ -36,24 +36,22 @@ def main():
 
     nwbfiles = get_files(PATHS['DATA'], select=TASK)
 
-    for nwbfile in nwbfiles:
+    for nwbfilename in nwbfiles:
 
         ## LOADING & DATA ACCESSING
 
         # Check and ignore files set to ignore
-        if nwbfile.split('.')[0] in IGNORE:
-            print('Skipping file: ', nwbfile)
+        if file_in_list(nwbfilename, IGNORE):
+            print('\nSkipping file (set to ignore): ', nwbfilename)
             continue
 
         # Load file and prepare data
-        print('Running session analysis: ', nwbfile)
+        print('Running session analysis: ', nwbfilename)
 
         # Load NWB file
-        nwbfile, io = load_nwbfile(nwbfile, PATHS['DATA'], return_io=True)
+        nwbfile, io = load_nwbfile(nwbfilename, PATHS['DATA'], return_io=True)
 
-        # Get the subject & session ID from file
-        subj_id = nwbfile.subject.subject_id
-        session_id = nwbfile.session_id
+        ## EXTRACT DATA OF INTEREST
 
         # Get epoch information
         nav_starts = nwbfile.trials.navigation_start[:]
@@ -85,15 +83,16 @@ def main():
         stimes = np.hstack(stimes_trials)
         speed = np.hstack(speed_trials)
 
-        ## ANALYZE SESSION DATA
-
-        # Initialize output unit file name & output dictionary
-        name = session_id
-        results = {}
+        # Get unit information
+        n_units = len(nwbfile.units)
+        keep_inds = np.where(nwbfile.units.keep[:])[0]
+        n_keep = len(keep_inds)
 
         # Get settings
         BINS = ANALYSIS_SETTINGS['PLACE_BINS']
         MIN_OCC = ANALYSIS_SETTINGS['MIN_OCCUPANCY']
+
+        ## PRECOMPUTE MEASURES OF INTEREST
 
         # Count confidence answers & fix empty values
         conf_counts = Counter(nwbfile.trials.confidence_response.data[:])
@@ -101,16 +100,9 @@ def main():
             if el not in conf_counts:
                 conf_counts[el] = 0
 
-        # Get unit information
-        n_units = len(nwbfile.units)
-        keep_inds = np.where(nwbfile.units.keep[:])[0]
-        n_keep = len(keep_inds)
-
-        # Compute firing rates for all units marked to keep
+        # Calculate unit-wise firing rates, and spatial occupancy
         frs = [compute_spike_rate(nwbfile.units.get_unit_spike_times(uind)) \
             for uind in keep_inds]
-
-        # Compute occupancy
         occ = compute_occupancy(positions, ptimes, bins=BINS, speed=speed,
                                 minimum=MIN_OCC, area_range=area_range, set_nan=True)
 
@@ -118,11 +110,27 @@ def main():
         subject_info = create_subject_info(nwbfile)
         behav_info = create_behav_info(nwbfile)
 
+        ## CREATE SESSION REPORT
+
+        # Collect information to save out
+        session_results = {}
+        session_results['task'] = TASK
+        for field in ['subject_id', 'session_id', 'session_length', 'n_units', 'n_keep']:
+            session_results[field] = subject_info[field]
+        for field in ['n_trials', 'n_chests', 'n_items', 'avg_error']:
+            session_results[field] = behav_info[field]
+
+        # Save out session results
+        save_json(session_results, subject_info['session_id'],
+                  folder=str(PATHS['RESULTS'] / 'sessions' / TASK))
+
         ## CREATE REPORT
+
         # Initialize figure
         _ = plt.figure(figsize=(15, 15))
         grid = gridspec.GridSpec(4, 3, wspace=0.4, hspace=1.0)
-        plt.suptitle('Subject Report - {}'.format(session_id), fontsize=24, y=0.95);
+        plt.suptitle('TH Subject Report - {}'.format(subject_info['session_id']),
+                     fontsize=24, y=0.95);
 
         # 00: subject text
         ax00 = plt.subplot(grid[0, 0])
@@ -163,23 +171,8 @@ def main():
         plot_hist(nwbfile.trials.error.data[:], title='Response Error', ax=ax22)
 
         # Save out report
-        report_name = 'session_report_' + session_id + '.pdf'
+        report_name = 'session_report_' + subject_info['session_id'] + '.pdf'
         plt.savefig(PATHS['REPORTS'] / 'sessions' / TASK / report_name)
-
-        ## COLLECT RESULTS
-        results['task'] = TASK
-        results['subj_id'] = subj_id
-        results['session_id'] = session_id
-        results['session_length'] = subject_info['length']
-        results['n_units'] = n_units
-        results['n_keep'] = n_keep
-        results['n_trials'] = behav_info['n_trials']
-        results['n_chests'] = behav_info['n_chests']
-        results['n_items'] = behav_info['n_items']
-        results['avg_error'] = behav_info['avg_error']
-
-        # Save out unit results
-        save_json(results, name + '.json', folder=str(PATHS['RESULTS'] / 'sessions' / TASK))
 
         # Close the nwbfile
         io.close()
