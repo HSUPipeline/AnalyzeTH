@@ -1,11 +1,10 @@
 """Plotting functions for TH analysis."""
 
-import matplotlib.pyplot as plt
+from copy import deepcopy
 from matplotlib.lines import Line2D
+import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-sns.set_context('talk')
-from copy import deepcopy
 
 from spiketools.plts.task import plot_task_structure as _plot_task_structure
 from spiketools.plts.spatial import plot_positions, plot_heatmap
@@ -95,7 +94,7 @@ def plot_trial_position_frs(t_spike_xs, t_spike_ys, chest_xs, t_mask, chest_ys,
     fig.suptitle(title, fontsize=18)
 
 
-def bar_line_plot(all_frs, labels, task, subj, session, unid, n_trials):
+def plot_bar_lines(all_frs, labels, task, subj, session, unid, n_trials):
     """Barplot of firing rate in each segment with lines from individual trials"""
     
     fig = plt.figure(figsize=(7,5))
@@ -113,7 +112,7 @@ def bar_line_plot(all_frs, labels, task, subj, session, unid, n_trials):
     ax.set_xticklabels(labels) 
 
 
-def boxplot_scatter(list_group_data, labels, task, subj, session, uind):
+def plot_box_scatter(list_group_data, labels, task, subj, session, uind):
     """boxplot of firing rate in each segment with scatterplot from individual trials"""
     
     fig = plt.figure(figsize=(7,5))
@@ -127,7 +126,7 @@ def boxplot_scatter(list_group_data, labels, task, subj, session, uind):
     ax.set(title='{}-{}-S{} - U{}'.format(task, subj, session, uind), ylabel="Firing Rate")
     
     
-def violinplot_scatter(list_group_data, labels, task, subj, session, uind):
+def plot_violin_scatter(list_group_data, labels, task, subj, session, uind):
     """violinplot of firing rate in each segment with scatterplot from individual trials"""
     
     fig = plt.figure(figsize=(7,5))
@@ -184,8 +183,6 @@ def plot_target_cells_heatmap(t_all_xs, t_all_ys, chest_x, chest_y, t_pos_all,
     title = '{}-{}-S{} - U{} - ({:1.2f}-{:1.2f})'.format(task, subj, session, uind, *get_range(target_bins))
     fig.suptitle(title, fontsize=20)
     
-    plt.show()
-    
     
 def plot_fr_by_target_subject_position(target_bins, bin_frs):
     """Plot the firing rate by spatial target and subject position"""
@@ -210,4 +207,3 @@ def plot_fr_by_target_subject_position(target_bins, bin_frs):
     fig.subplots_adjust(right=0.85)
     cbar_ax = fig.add_axes([0.86, 0.13, 0.03, 0.75]) #colorbar at the right
     plt.colorbar(img, cax=cbar_ax)
-    plt.show()
