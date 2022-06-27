@@ -12,7 +12,7 @@ import numpy as np
 
 from spiketools.spatial.occupancy import compute_nbins
 from spiketools.stats.anova import create_dataframe, fit_anova
-from spiketools.utils.data import restrict_range, get_value_by_time, get_value_by_time_range
+from spiketools.utils.extract import get_range, get_value_by_time, get_value_by_time_range
 
 # import local code
 from analysis import get_spike_positions
@@ -52,7 +52,7 @@ def compute_spatial_target_bins(spikes, nav_starts, chest_openings, chest_trials
         #t_time, t_pos = get_value_by_time_range(ptimes, positions, t_st, t_en)
         #ch_times = [get_value_by_time(t_time, t_pos, ch_op) for ch_op in ch_openings]
 
-        t_spikes = restrict_range(spikes, t_st, t_en)
+        t_spikes = get_range(spikes, t_st, t_en)
         #t_spike_xs, t_spike_ys = get_spike_positions(t_spikes, t_time, t_pos)
 
         #seg_times = np.diff(np.insert(ch_openings, 0, t_time[0]))
@@ -89,7 +89,7 @@ def get_trial_target(spikes, navigations, bins, openings, chest_trials,
         # Get navigation start & end and restrict spikes to this range
         t_st = navigations[t_ind]
         t_en = t_openings[-1]
-        t_spikes = restrict_range(spikes, t_st, t_en)
+        t_spikes = get_range(spikes, t_st, t_en)
 
         # Select chest openings for the current trial
         #t_time, t_pos = get_value_by_time_range(ptimes, positions, t_st, t_en)

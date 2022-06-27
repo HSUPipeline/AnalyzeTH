@@ -26,7 +26,7 @@ from spiketools.stats.permutations import compute_surrogate_stats
 from spiketools.spatial.occupancy import (compute_occupancy, compute_bin_edges,
                                           compute_bin_assignment, compute_bin_firing)
 from spiketools.spatial.information import compute_spatial_information
-from spiketools.utils.data import get_range
+from spiketools.utils.data import compute_range
 from spiketools.utils.trials import (epoch_spikes_by_event, epoch_spikes_by_range,
                                      epoch_data_by_range)
 from spiketools.utils.base import select_from_list
@@ -355,7 +355,7 @@ def main():
                 # ax31: positional heatmap
                 ax31 = plt.subplot(grid[3:5, 1])
                 plot_heatmap(bin_firing, transpose=True, ax=ax31,
-                             title='Range: {:1.2f}-{:1.2f}'.format(*get_range(bin_firing)))
+                             title='Range: {:1.2f}-{:1.2f}'.format(*compute_range(bin_firing)))
 
                 # # ax31: head direction of spike firing
                 # ax32 = plt.subplot(grid[3, 2], polar=True)
@@ -379,7 +379,7 @@ def main():
                 # ax51: spatial target firing
                 ax51 = plt.subplot(grid[5, 1])
                 plot_heatmap(target_bins, transpose=True, ax=ax51,
-                             title='Range: {:1.2f}-{:1.2f}'.format(*get_range(target_bins)))
+                             title='Range: {:1.2f}-{:1.2f}'.format(*compute_range(target_bins)))
 
                 # ax52: target surrogates
                 ax52 = plt.subplot(grid[5, 2])

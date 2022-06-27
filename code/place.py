@@ -9,7 +9,7 @@ from spiketools.stats.anova import create_dataframe, fit_anova
 from spiketools.spatial.occupancy import (compute_nbins, compute_bin_assignment,
                                           compute_bin_firing, normalize_bin_firing,
                                           compute_occupancy)
-from spiketools.utils.data import restrict_range, get_value_by_time_range
+from spiketools.utils.extract import get_range, get_value_by_time_range
 
 # import local code
 from analysis import get_spike_positions
@@ -58,8 +58,8 @@ def get_trial_place(spikes, trials, bins, ptimes, positions, speed,
 
         # Get data for selected trial: trial positions, spikes, and spike positions
         t_times, t_pos = get_value_by_time_range(ptimes, positions, nav_start, nav_stop)
-        t_spikes = restrict_range(spikes, nav_start, nav_stop)
-        t_speed = restrict_range(speed, nav_start, nav_stop)
+        t_spikes = get_range(spikes, nav_start, nav_stop)
+        t_speed = get_range(speed, nav_start, nav_stop)
         t_spike_pos_x, t_spike_pos_y = get_spike_positions(t_spikes, t_times, t_pos)
         t_spike_pos = np.array([t_spike_pos_x, t_spike_pos_y])
 

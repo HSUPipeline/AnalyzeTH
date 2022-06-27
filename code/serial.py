@@ -6,7 +6,7 @@ from collections import Counter
 import numpy as np
 
 from spiketools.stats.anova import create_dataframe, fit_anova
-from spiketools.utils.data import restrict_range, get_value_by_time, get_value_by_time_range
+from spiketools.utils.extract import get_range, get_value_by_time, get_value_by_time_range
 
 ###################################################################################################
 ###################################################################################################
@@ -35,7 +35,7 @@ def compute_serial_position_fr(spikes, nav_starts, chest_openings, chest_trials)
 
         chest_trials == t_ind
 
-        t_spikes = restrict_range(spikes, t_st, t_en)
+        t_spikes = get_range(spikes, t_st, t_en)
 
         seg_times = np.diff(np.insert(ch_openings, 0, t_st))
         count = Counter({0 : 0, 1 : 0, 2 : 0, 3 : 0})
