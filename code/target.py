@@ -138,13 +138,13 @@ def get_chest_data_per_bin(intersect, chest_trial_number, ptimes, positions, spi
     t_all_xs = []
     t_all_ys = []
     
-    for i in intersect:
+    for ind in intersect:
         # For the non-first chest position per trial
-        if i not in chest_trial_number[:,0]:
-            t_time, t_pos = get_value_by_time_range(ptimes, positions, ch_openings_all[i], ch_openings_all[i+1])
+        if ind not in chest_trial_number[:,0]:
+            t_time, t_pos = get_value_by_time_range(ptimes, positions, ch_openings_all[ind], ch_openings_all[ind+1])
             t_pos_all.append(t_pos)
 
-            t_spikes = restrict_range(spikes, ch_openings_all[i], ch_openings_all[i+1])
+            t_spikes = restrict_range(spikes, ch_openings_all[ind], ch_openings_all[ind+1])
             t_spike_xs, t_spike_ys = get_spike_positions(t_spikes, t_time, t_pos)
 
             t_spike_xs = np.array(t_spike_xs).flatten()
@@ -153,11 +153,11 @@ def get_chest_data_per_bin(intersect, chest_trial_number, ptimes, positions, spi
             t_all_ys.append(t_spike_ys) 
         # For the first chest position per trial
         else:          
-            x = int(i/4)
-            t_time, t_pos = get_value_by_time_range(ptimes, positions, nav_starts[x], ch_openings_all[i])
+            chest_trial = int(ind/4)
+            t_time, t_pos = get_value_by_time_range(ptimes, positions, nav_starts[chest_trial], ch_openings_all[chest_trial])
             t_pos_all.append(t_pos)
 
-            t_spikes = restrict_range(spikes, nav_starts[x], ch_openings_all[i])
+            t_spikes = restrict_range(spikes, nav_starts[chest_trial], ch_openings_all[ind])
             t_spike_xs, t_spike_ys = get_spike_positions(t_spikes, t_time, t_pos)
 
             t_spike_xs = np.array(t_spike_xs).flatten()
