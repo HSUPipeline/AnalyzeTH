@@ -181,9 +181,7 @@ def get_chest_data_per_bin(intersect, chest_trials, ptimes, positions, spikes, c
     t_all_xs : 1d array
         Spike position on x-dimension corresponding to chests in a target bin. 
     t_all_ys : 1d array
-        Spike position on y-dimension corresponding to chests in a target bin.
-    
-    
+        Spike position on y-dimension corresponding to chests in a target bin. 
     """
     
     t_pos_all = []
