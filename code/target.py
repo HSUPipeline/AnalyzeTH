@@ -194,29 +194,21 @@ def get_chest_data_per_bin(intersect, chest_trials, ptimes, positions, spikes, c
         # For the non-first chest position per trial
         if ind not in chest_trial_number[:,0]:
             t_time, t_pos = get_value_by_time_range(ptimes, positions, ch_openings_all[ind], ch_openings_all[ind+1])
-            t_pos_all.append(t_pos)
-
             t_spikes = restrict_range(spikes, ch_openings_all[ind], ch_openings_all[ind+1])
-            t_spike_xs, t_spike_ys = get_spike_positions(t_spikes, t_time, t_pos)
 
-            t_spike_xs = np.array(t_spike_xs).flatten()
-            t_spike_ys = np.array(t_spike_ys).flatten()
-            t_all_xs.append(t_spike_xs)
-            t_all_ys.append(t_spike_ys) 
         # For the first chest position per trial
         else:          
             chest_trial = int(ind/4)
             t_time, t_pos = get_value_by_time_range(ptimes, positions, nav_starts[chest_trial], ch_openings_all[chest_trial])
-            t_pos_all.append(t_pos)
-
             t_spikes = restrict_range(spikes, nav_starts[chest_trial], ch_openings_all[ind])
-            t_spike_xs, t_spike_ys = get_spike_positions(t_spikes, t_time, t_pos)
-
-            t_spike_xs = np.array(t_spike_xs).flatten()
-            t_spike_ys = np.array(t_spike_ys).flatten()
-            t_all_xs.append(t_spike_xs)
-            t_all_ys.append(t_spike_ys)
             
+        t_pos_all.append(t_pos)
+        t_spike_xs, t_spike_ys = get_spike_positions(t_spikes, t_time, t_pos)
+        t_spike_xs = np.array(t_spike_xs).flatten()
+        t_spike_ys = np.array(t_spike_ys).flatten()
+        t_all_xs.append(t_spike_xs)
+        t_all_ys.append(t_spike_ys)
+
     t_all_xs = np.concatenate(t_all_xs).ravel()
     t_all_ys = np.concatenate(t_all_ys).ravel()   
     
