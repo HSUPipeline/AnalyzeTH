@@ -158,8 +158,9 @@ def plot_target_cells_heatmap(t_all_xs, t_all_ys, chest_x, chest_y, t_pos_all,
                               area_range, target_bins, task, subj, session, uind):
     """Plot subject/spike position toward target bin and the fr by spatial target position"""
     
-    target_bins_reshaped = reshape_target_bins(target_bins)
-    target_bins_reshaped[target_bins_reshaped == 0.] = np.nan
+#     target_bins_reshaped = reshape_target_bins(target_bins)
+#     target_bins_reshaped[target_bins_reshaped == 0.] = np.nan
+    target_bins[target_bins == 0.] = np.nan
     
     fig = plt.figure(figsize=(10, 6))
     ax1 = fig.add_subplot(121)
