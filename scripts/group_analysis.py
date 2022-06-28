@@ -2,9 +2,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import gridspec
-
-from pynwb import NWBHDF5IO
 
 from convnwb.io import get_files, load_nwbfile, file_in_list
 
@@ -62,39 +59,29 @@ def main():
         # Close the nwbfile
         io.close()
 
-    # Collect information of interest
-    group_info = create_group_info(summary)
-
     ## CREATE REPORT
-    # Initialize figure
-    _ = plt.figure(figsize=(15, 12))
-    grid = gridspec.GridSpec(3, 3, wspace=0.4, hspace=1.0)
-    plt.suptitle('Group Report - {} - {} sessions'.format(TASK, len(summary['ids'])),
-                 fontsize=24, y=0.95);
+    # Initialize figure with grid layout and add title
+    grid = make_grid(3, 3, wspace=0.4, hspace=1.0, figsize=(15, 12),
+                     title='Group Report - {} - {} sessions'.format(TASK, len(summary['ids'])))
 
     # 00: group text
-    ax00 = plt.subplot(grid[0, 0])
-    plot_text(create_group_str(group_info), ax=ax00)
+    plot_text(create_group_str(create_group_info(summary)), ax=get_grid_subplot(grid, 0, 0))
 
     # 01: neuron firing
-    ax01 = plt.subplot(grid[0, 1])
-    plot_hist(summary['n_units'], title='Number of Units', ax=ax01)
+    plot_hist(summary['n_keep'], title='Number of Units', ax=get_grid_subplot(grid, 0, 1))
 
     # 10-12: behavioural data
-    ax10 = plt.subplot(grid[1, 0])
-    plot_hist(summary['n_trials'], title='Number of trials', ax=ax10)
-    ax11 = plt.subplot(grid[1, 1])
-    plot_hist(summary['correct'] * 100, title='Percent Correct', ax=ax11)
-    ax12 = plt.subplot(grid[1, 2])
-    plot_hist(summary['error'], title='Average Error', ax=ax12)
+    plot_hist(summary['n_trials'], title='Number of trials', ax=get_grid_subplot(grid, 1, 0))
+    plot_hist(summary['correct'] * 100, title='Percent Correct', ax=get_grid_subplot(grid, 1, 1))
+    plot_hist(summary['error'], title='Average Error', ax=get_grid_subplot(grid, 1, 2))
 
     # 21: detailed session strings
-    ax21 = plt.subplot(grid[2, 1])
-    plot_text('\n'.join(create_group_sessions_str(summary)), ax=ax21)
+    plot_text('\n'.join(create_group_sessions_str(summary)), ax=get_grid_subplot(grid, 2, 1))
 
     # Save out report
     report_name = 'group_report_' + TASK + '.pdf'
     plt.savefig(PATHS['REPORTS'] / 'group' / report_name)
+    plt.close()
 
     print('\n\nCOMPLETED GROUP ANALYSES\n\n')
 

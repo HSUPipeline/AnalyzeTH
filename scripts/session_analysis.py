@@ -4,9 +4,6 @@ from collections import Counter
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import gridspec
-
-from pynwb import NWBHDF5IO
 
 from convnwb.io import get_files, save_json, load_nwbfile
 
@@ -127,52 +124,46 @@ def main():
         ## CREATE REPORT
 
         # Initialize figure
-        _ = plt.figure(figsize=(15, 15))
-        grid = gridspec.GridSpec(4, 3, wspace=0.4, hspace=1.0)
-        plt.suptitle('TH Subject Report - {}'.format(subject_info['session_id']),
-                     fontsize=24, y=0.95);
+        grid = make_grid(4, 3, wspace=0.4, hspace=1.0, figsize=(15, 15),
+                         title='TH Subject Report - {}'.format(subject_info['session_id']))
 
         # 00: subject text
-        ax00 = plt.subplot(grid[0, 0])
-        plot_text(create_subject_str(subject_info), ax=ax00)
+        plot_text(create_subject_str(subject_info), ax=get_grid_subplot(grid, 0, 0))
 
         # 01: neuron fig
-        ax01 = plt.subplot(grid[0, 1:])
-        plot_unit_frs(frs, ax=ax01)
-        ax01.set(xticks=[])
+        plot_firing_rates(frs, xticks=[], ax=get_grid_subplot(grid, 0, slice(1, None)))
 
         # 10: position text
-        ax10 = plt.subplot(grid[1, 0])
-        plot_text(create_position_str(BINS, occ), ax=ax10)
+        plot_text(create_position_str(BINS, occ), ax=get_grid_subplot(grid, 1, 0))
 
         # 11: occupancy map
-        ax11 = plt.subplot(grid[1:3, 1])
-        plot_heatmap(occ, transpose=True, title='Occupancy', ax=ax11)
+        plot_heatmap(occ, transpose=True, title='Occupancy',
+                     ax=get_grid_subplot(grid, slice(1, 3), 1))
 
         # 12: subject positions overlaid with chest positions
-        ax12 = plt.subplot(grid[1:3, 2])
-        plot_positions(positions_trials, ax=ax12)
-        ax12.plot(*chest_positions, '.g');
+        plot_positions(positions_trials,
+                       landmarks={'positions' : chest_positions, 'color' : 'green'},
+                       ax=get_grid_subplot(grid, slice(1, 3), 2))
 
         # 20: head direction
-        ax20 = plt.subplot(grid[2, 0], polar=True)
-        plot_polar_hist(hd_degrees, title='Head Direction', ax=ax20)
+        plot_polar_hist(hd_degrees, title='Head Direction',
+                        ax=get_grid_subplot(grid, 2, 0, polar=True))
 
         # 30: behaviour text
-        ax20 = plt.subplot(grid[3, 0])
-        plot_text(create_behav_str(behav_info), ax=ax20)
+        plot_text(create_behav_str(behav_info), ax=get_grid_subplot(grid, 3, 0))
 
         # 31: choice point plot
-        ax21 = plt.subplot(grid[3, 1])
-        plot_bar(conf_counts.values(), conf_counts.keys(), title='Confidence Reports', ax=ax21)
+        plot_bar(conf_counts.values(), conf_counts.keys(),
+                 title='Confidence Reports', ax=get_grid_subplot(grid, 3, 1))
 
         # 32: errors plot
-        ax22 = plt.subplot(grid[3, 2])
-        plot_hist(nwbfile.trials.error.data[:], title='Response Error', ax=ax22)
+        plot_hist(nwbfile.trials.error.data[:], title='Response Error',
+                  ax=get_grid_subplot(grid, 3, 2))
 
         # Save out report
         report_name = 'session_report_' + subject_info['session_id'] + '.pdf'
         plt.savefig(PATHS['REPORTS'] / 'sessions' / TASK / report_name)
+        plt.close()
 
         # Close the nwbfile
         io.close()

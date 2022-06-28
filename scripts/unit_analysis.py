@@ -6,7 +6,6 @@ import traceback
 import numpy as np
 from scipy.stats import sem, ttest_rel
 import matplotlib.pyplot as plt
-from matplotlib import gridspec
 
 from convnwb.io import load_nwbfile
 
@@ -134,33 +133,33 @@ def main():
         n_keep = len(keep_inds)
 
         # Loop across all units
-        for unit_ind in keep_inds:
+        for uid in keep_inds:
 
             # Initialize output unit file name & output dictionary
-            name = nwbfile.session_id + '_U' + str(unit_ind).zfill(2)
+            name = nwbfile.session_id + '_U' + str(uid).zfill(2)
 
             # Check if unit already run
             if UNIT_SETTINGS['SKIP_ALREADY_RUN'] and file_in_list(name, output_files):
-                print('\tskipping unit (already run): \tU{:02d}'.format(unit_ind))
+                print('\tskipping unit (already run): \tU{:02d}'.format(uid))
                 continue
 
             if UNIT_SETTINGS['SKIP_FAILED'] and file_in_list(name, failed_files):
-                print('\tskipping unit (failed): \tU{:02d}'.format(unit_ind))
+                print('\tskipping unit (failed): \tU{:02d}'.format(uid))
                 continue
 
-            print('\trunning unit: \t\t\tU{:02d}'.format(unit_ind))
+            print('\trunning unit: \t\t\tU{:02d}'.format(uid))
 
             try:
 
                 # Collect information of interest
-                unit_info = create_unit_info(nwbfile.units[unit_ind])
+                unit_info = create_unit_info(nwbfile.units[uid])
 
                 # Extract spikes for a unit of interest
-                spikes = nwbfile.units.get_unit_spike_times(unit_ind)
+                spikes = nwbfile.units.get_unit_spike_times(uid)
 
                 # Initialize results and add unit metadata
                 results = {}
-                results['uid'] = int(unit_ind)
+                results['uid'] = int(uid)
                 results['session_id'] = nwbfile.session_id
                 results['subject_id'] = nwbfile.subject.subject_id
                 for field in ['wvID', 'keep', 'n_spikes', 'firing_rate'
@@ -309,90 +308,78 @@ def main():
                 ### MAKE REPORT
 
                 # Initialize figure
-                _ = plt.figure(figsize=(15, 18))
-                grid = gridspec.GridSpec(6, 3, wspace=0.4, hspace=1.)
+                grid = make_grid(6, 3, figsize=(15, 18), wspace=0.4, hspace=1.,
+                                 title='Unit Report: {}-U{}'.format(nwbfile.session_id, uid))
+
 
                 # 00: plot rasters across all trials
-                ax00 = plt.subplot(grid[0, 0])
-                plot_rasters(all_trials, ax=ax00, title='All Trials')
+                plot_rasters(all_trials, title='All Trials', ax=get_grid_subplot(grid, 0, 0))
+
                 # 01: unit information
-                ax01 = plt.subplot(grid[0, 1])
-                plot_text(create_unit_str(unit_info), ax=ax01)
-                ax01.set_title("Unit Information", fontdict={'fontsize' : 16}, y=1.2)
+                plot_text(create_unit_str(unit_info), title='Unit Information',
+                          ax=get_grid_subplot(grid, 0, 1))
 
                 # 02: inter-spike intervals
-                ax02 = plt.subplot(grid[0, 2])
-                isis = compute_isis(spikes)
-                plot_isis(isis, bins=100, range=(0, 2), ax=ax02)
+                plot_isis(compute_isis(spikes), bins=100, range=(0, 2), ax=get_grid_subplot(grid, 0, 2))
 
                 # 10: chest related firing
                 title_str = '{} - Pre: {:1.2f} - Pos: {:1.2f}  (t:{:1.2f}, p:{:1.2f})'
-                ax10 = plt.subplot(grid[1:3, 0:2])
-                plot_rasters(all_chests, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'],
-                             vline=0, figsize=(10, 7), ax=ax10)
-                ax10.set_title(title_str.format('All Chests', fr_pre_all, fr_post_all, fr_t_val_all, results['fr_p_val_all']),
-                               color=color_pval(results['fr_p_val_all']))
+                plot_rasters(all_chests, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'], vline=0,
+                             title=title_str.format('All Chests', fr_pre_all, fr_post_all, fr_t_val_all, results['fr_p_val_all']),
+                             title_color=color_pval(results['fr_p_val_all']),
+                             ax=get_grid_subplot(grid, slice(1, 3), slice(0, 2)))
+
 
                 # 12&22: Compare Empty & Full chest trials
                 # Empty chest trials
-                ax12 = plt.subplot(grid[1, 2])
-                plot_rasters(empty_trials, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'], vline=0, ax=ax12)
-                ax12.set_title(title_str.format('Empty', fr_pre_empt, fr_post_empt, fr_t_val_empt, results['fr_p_val_empt']),
-                               color=color_pval(results['fr_p_val_empt']), fontdict={'fontsize' : 14})
+                plot_rasters(empty_trials, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'], vline=0,
+                             title=title_str.format('Empty', fr_pre_empt, fr_post_empt, fr_t_val_empt, results['fr_p_val_empt']),
+                             title_color=color_pval(results['fr_p_val_empt']), title_fontsize=14,
+                             ax=get_grid_subplot(grid, 1, 2))
 
                 # Full chest trials
-                ax22 = plt.subplot(grid[2, 2])
-                plot_rasters(full_trials, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'], vline=0, ax=ax22)
-                ax22.set_title(title_str.format('Full', fr_pre_full, fr_post_full, fr_t_val_full, results['fr_p_val_full']),
-                               color=color_pval(results['fr_p_val_full']), fontdict={'fontsize' : 14})
+                plot_rasters(full_trials, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'], vline=0,
+                             title=title_str.format('Full', fr_pre_full, fr_post_full, fr_t_val_full, results['fr_p_val_full']),
+                             title_color=color_pval(results['fr_p_val_full']), title_fontsize=14,
+                             ax=get_grid_subplot(grid, 2, 2))
 
                 # ax30: positional firing
-                ax30 = plt.subplot(grid[3:5, 0])
-                plot_positions(positions, spike_positions,
-                               x_bins=x_bin_edges, y_bins=y_bin_edges, ax=ax30,
-                               title='Firing Across Positions')
+                plot_positions(positions, spike_positions, x_bins=x_bin_edges, y_bins=y_bin_edges,
+                               title='Firing Across Positions',
+                               ax=get_grid_subplot(grid, slice(3, 5), 0))
 
                 # ax31: positional heatmap
-                ax31 = plt.subplot(grid[3:5, 1])
-                plot_heatmap(bin_firing, transpose=True, ax=ax31,
+                plot_heatmap(bin_firing, transpose=True, ax=get_grid_subplot(grid, slice(3, 5), 1),
                              title='Range: {:1.2f}-{:1.2f}'.format(*compute_range(bin_firing)))
 
-                # # ax31: head direction of spike firing
-                # ax32 = plt.subplot(grid[3, 2], polar=True)
-                # plot_polar_hist(spike_hds, ax=ax32)
-                # ax32.set(xticklabels=[], yticklabels=[])
-                # ax32.set_title('Head Direction', color=color_pval(hd_p_val))
+                # ax32: head direction of spike firing
+                # plot_polar_hist(spike_hds, xticklabels=[], yticklabels=[],
+                #                 title='Head Direction', title_color=color_pval(results['hd_surr_p_val']),
+                #                 ax=get_grid_subplot(grid, 3, 2, polar=True))
+
 
                 # ax42: place surrogates
-                ax42 = plt.subplot(grid[4, 2])
-                #plot_surrogates(surrs['place_info'], results['place_info'],
-                #                results['place_info_surr_p_val'], ax=ax42)
-                plot_surrogates(surrs['place_anova'], results['place_anova'],
-                                results['place_anova_surr_p_val'], ax=ax42)
-                ax42.set_title('Place Surrogates', color=color_pval(place_p_val))
+                # plot_surrogates(surrs['place_info'], results['place_info'], results['place_info_surr_p_val'],
+                #                 title='Place Surrogates', title_color=color_pval(results['place_info_surr_p_val']),
+                #                 ax=get_grid_subplot(grid, 4, 2))
+                plot_surrogates(surrs['place_anova'], results['place_anova'], results['place_anova_surr_p_val'],
+                                title='Place Surrogates', title_color=color_pval(results['place_anova_surr_p_val']),
+                                ax=get_grid_subplot(grid, 4, 2))
 
                 # ax50: firing rates across trial segments
-                ax50 = plt.subplot(grid[5, 0])
-                plot_bar(sp_all_frs.mean(0), [0, 1, 2, 3], yerr=sem(sp_all_frs, 0), ax=ax50)
-                ax50.set_title('Serial Position', color=color_pval(sp_p_val))
+                plot_bar(sp_all_frs.mean(0), [0, 1, 2, 3], yerr=sem(sp_all_frs, 0),
+                         title='Serial Position', title_color=color_pval(results['sp_anova_surr_p_val']),
+                         ax=get_grid_subplot(grid, 5, 0))
 
                 # ax51: spatial target firing
-                ax51 = plt.subplot(grid[5, 1])
-                plot_heatmap(target_bins, transpose=True, ax=ax51,
-                             title='Range: {:1.2f}-{:1.2f}'.format(*compute_range(target_bins)))
+                plot_heatmap(target_bins, transpose=True,
+                             title='Range: {:1.2f}-{:1.2f}'.format(*compute_range(target_bins)),
+                             ax=get_grid_subplot(grid, 5, 1))
 
                 # ax52: target surrogates
-                ax52 = plt.subplot(grid[5, 2])
-                #plot_surrogates(surrs['target_info'], results['target_info'],
-                #                results['target_info_surr_p_val'], ax=ax52)
-                plot_surrogates(surrs['target_anova'], results['target_anova'],
-                                results['target_anova_surr_p_val'], ax=ax52)
-
-                ax52.set_title('Target Surrogates', color=color_pval(target_p_val))
-
-                # Add super title to the report
-                suptitle = 'Unit Report: {}-U{}'.format(nwbfile.session_id, unit_ind)
-                plt.suptitle(suptitle, fontsize=24, y=0.95);
+                plot_surrogates(surrs['target_anova'], results['target_anova'], results['target_anova_surr_p_val'],
+                                title='Target Surrogates', title_color=color_pval(results['target_anova_surr_p_val']),
+                                ax=get_grid_subplot(grid, 5, 2))
 
                 # Save out report
                 report_name = 'unit_report_' + name + '.pdf'
@@ -402,7 +389,7 @@ def main():
             except Exception as excp:
                 if not UNIT_SETTINGS['CONTINUE_ON_FAIL']:
                     raise
-                print('\t\tissue running unit # {}'.format(unit_ind))
+                print('\t\tissue running unit # {}'.format(uid))
                 save_txt(traceback.format_exc(), name, folder=str(PATHS['RESULTS'] / 'units' / TASK / 'zFailed'))
 
         # Close the nwbfile
