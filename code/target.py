@@ -116,7 +116,30 @@ def get_trial_target(spikes, navigations, bins, openings, chest_trials,
 
 
 def get_target_chest_location(target_bins, ch_xbin, ch_ybin, chest_xs, chest_ys):
-    """compute the location of chests in a target bin"""
+    """compute the location of chests in a target bin
+    
+    Parameters
+    ----------
+    target_bins : 2d array
+        Binned firing rate based on spatial target.
+    ch_xbin : 1d array
+        Bin assignments for the x-dimension for each position.
+    ch_ybin : 1d array
+        Bin assignments for the y-dimension for each position.
+    chest_xs : 1d array
+        Chest position on the x-dimension.
+    chest_ys : 1d array
+        Chest position on the y-dimension. 
+        
+    Returns
+    -------
+    intersect : list of [int]
+        Index of chests located in a target bin.
+    chest_x : list of [int]
+        X-position of chests located in a target bin. 
+    chest_y : list of [int]
+        Y-position of chests located in a target bin. 
+    """
     
     bin_y, bin_x = np.where(target_bins==np.amax(target_bins))
     
@@ -131,8 +154,37 @@ def get_target_chest_location(target_bins, ch_xbin, ch_ybin, chest_xs, chest_ys)
     return intersect, chest_x, chest_y
 
   
-def get_chest_data_per_bin(intersect, chest_trial_number, ptimes, positions, spikes, ch_openings_all, nav_starts):
-    """Get spikes and positions of all chest in a target bin"""
+def get_chest_data_per_bin(intersect, chest_trials, ptimes, positions, spikes, ch_openings, nav_starts):
+    """Get spikes and positions of all chest in a target bin
+    
+    Parameters 
+    ----------
+    intersect : list of [int]
+        Index of chests located in a target bin.
+    chest_trials : 1d array
+        Chest number in each trial.
+    ptimes : 1d array
+        Timestamps of subject's position. 
+    positions : 2d array
+        Subject's position on both x- and y-dimension.
+    spikes : 1d array
+        Spike times in second.
+    ch_openings : list of 1d arrays
+        Timestamps of chest opening. 
+    nav_starts : 1d array
+        Timestamps of the start of navigation period in each trial. 
+    
+    Returns
+    -------
+    t_pos_all : list of 2d arrays
+        Subject's position corresponding to chests in a target bin.
+    t_all_xs : 1d array
+        Spike position on x-dimension corresponding to chests in a target bin. 
+    t_all_ys : 1d array
+        Spike position on y-dimension corresponding to chests in a target bin.
+    
+    
+    """
     
     t_pos_all = []
     t_all_xs = []
