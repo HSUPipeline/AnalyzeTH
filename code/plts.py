@@ -171,7 +171,7 @@ def plot_target_cells_heatmap(t_all_xs, t_all_ys, chest_x, chest_y, t_pos_all,
                   'color' : 'green', 'ms' : 40, 'alpha' : 0.25}]
     plot_positions(t_pos_all, tspikes, landmarks, ax=ax1, 
                    xlim=area_range[0], ylim=area_range[1])
-    img = ax2.imshow(target_bins_reshaped, aspect="auto", origin="lower")
+    img = ax2.imshow(target_bins, aspect="auto", origin="lower")
     
     ax2.axis("on")
     ax2.set_yticks([])
