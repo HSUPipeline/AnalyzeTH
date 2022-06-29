@@ -5,7 +5,6 @@ import traceback
 
 import numpy as np
 from scipy.stats import sem, ttest_rel
-import matplotlib.pyplot as plt
 
 from convnwb.io import load_nwbfile
 
@@ -21,6 +20,7 @@ from spiketools.plts.trials import plot_rasters
 from spiketools.plts.data import plot_bar, plot_polar_hist, plot_text
 from spiketools.plts.stats import plot_surrogates
 from spiketools.plts.annotate import color_pval
+from spiketools.plts.utils import make_grid, get_grid_subplot, save_figure
 from spiketools.stats.permutations import compute_surrogate_stats
 from spiketools.spatial.occupancy import (compute_occupancy, compute_bin_edges,
                                           compute_bin_assignment, compute_bin_firing)
@@ -382,9 +382,7 @@ def main():
                                 ax=get_grid_subplot(grid, 5, 2))
 
                 # Save out report
-                report_name = 'unit_report_' + name + '.pdf'
-                plt.savefig(PATHS['REPORTS'] / 'units' / TASK / report_name)
-                plt.close()
+                save_figure('unit_report_' + name + '.pdf', PATHS['REPORTS'] / 'units' / TASK, close=True)
 
             except Exception as excp:
                 if not UNIT_SETTINGS['CONTINUE_ON_FAIL']:

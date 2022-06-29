@@ -1,11 +1,11 @@
 """Run & collect TH analyses at the group level."""
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from convnwb.io import get_files, load_nwbfile, file_in_list
 
 from spiketools.plts.data import plot_hist, plot_text
+from spiketools.plts.utils import make_grid, get_grid_subplot, save_figure
 
 # Import settings from local file
 from settings import TASK, PATHS, IGNORE
@@ -79,9 +79,7 @@ def main():
     plot_text('\n'.join(create_group_sessions_str(summary)), ax=get_grid_subplot(grid, 2, 1))
 
     # Save out report
-    report_name = 'group_report_' + TASK + '.pdf'
-    plt.savefig(PATHS['REPORTS'] / 'group' / report_name)
-    plt.close()
+    save_figure('group_report_' + TASK + '.pdf', PATHS['REPORTS'] / 'group', close=True)
 
     print('\n\nCOMPLETED GROUP ANALYSES\n\n')
 

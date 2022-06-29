@@ -3,7 +3,6 @@
 from collections import Counter
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from convnwb.io import get_files, save_json, load_nwbfile
 
@@ -12,6 +11,7 @@ from spiketools.spatial.occupancy import compute_occupancy
 from spiketools.plts.data import plot_bar, plot_hist, plot_polar_hist, plot_text
 from spiketools.plts.spatial import plot_heatmap, plot_positions
 from spiketools.plts.spikes import plot_unit_frs
+from spiketools.plts.utils import make_grid, get_grid_subplot, save_figure
 from spiketools.utils.trials import epoch_data_by_range
 
 # Import settings from local file
@@ -161,9 +161,8 @@ def main():
                   ax=get_grid_subplot(grid, 3, 2))
 
         # Save out report
-        report_name = 'session_report_' + subject_info['session_id'] + '.pdf'
-        plt.savefig(PATHS['REPORTS'] / 'sessions' / TASK / report_name)
-        plt.close()
+        save_figure('session_report_' + subject_info['session_id'] + '.pdf',
+                    PATHS['REPORTS'] / 'sessions' / TASK, close=True)
 
         # Close the nwbfile
         io.close()
