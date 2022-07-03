@@ -58,6 +58,8 @@ METHOD_SETTINGS = {
 
 # Set the time range to analyze
 TRIAL_RANGE = [-1, 1]
+PRE_WINDOW = [-1, 0]
+POST_WINDOW = [0, 1]
 
 # Set the spatial bin definitions
 #PLACE_BINS = [7, 21]
@@ -71,6 +73,8 @@ MIN_OCCUPANCY = 1
 # Collect together all analysis settings
 ANALYSIS_SETTINGS = {
     'TRIAL_RANGE' : TRIAL_RANGE,
+    'PRE_WINDOW' : PRE_WINDOW,
+    'POST_WINDOW' : POST_WINDOW,
     'PLACE_BINS' : PLACE_BINS,
     'CHEST_BINS' : CHEST_BINS,
     'MIN_OCCUPANCY' : MIN_OCCUPANCY

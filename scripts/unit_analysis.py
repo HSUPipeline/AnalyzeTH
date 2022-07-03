@@ -4,7 +4,7 @@ import warnings
 import traceback
 
 import numpy as np
-from scipy.stats import sem, ttest_rel
+from scipy.stats import sem
 
 from convnwb.io import load_nwbfile
 
@@ -14,9 +14,10 @@ from convnwb.io import get_files, save_json, save_txt, file_in_list
 
 from spiketools.measures import compute_isis
 from spiketools.stats.shuffle import shuffle_spikes
+from spiketools.stats.trials import compare_pre_post_activity
 from spiketools.plts.spikes import plot_isis
 from spiketools.plts.spatial import plot_positions, plot_heatmap
-from spiketools.plts.trials import plot_rasters
+from spiketools.plts.trials import plot_rasters, create_trial_title
 from spiketools.plts.data import plot_bar, plot_polar_hist, plot_text
 from spiketools.plts.stats import plot_surrogates
 from spiketools.plts.annotate import color_pval
@@ -26,6 +27,7 @@ from spiketools.spatial.occupancy import (compute_occupancy, compute_bin_edges,
                                           compute_bin_assignment, compute_bin_firing)
 from spiketools.spatial.information import compute_spatial_information
 from spiketools.utils.data import compute_range
+from spiketools.utils.extract import get_values_by_times
 from spiketools.utils.trials import (epoch_spikes_by_event, epoch_spikes_by_range,
                                      epoch_data_by_range)
 from spiketools.utils.base import select_from_list
@@ -37,9 +39,9 @@ from settings import (TASK, PATHS, IGNORE, UNIT_SETTINGS, METHOD_SETTINGS,
 # Import local code
 import sys
 sys.path.append('../code')
-from analysis import calc_trial_frs, get_spike_positions#, get_spike_heading
 from place import get_trial_place, compute_place_bins, create_df_place, fit_anova_place
-from target import compute_spatial_target_bins, get_trial_target, create_df_target, fit_anova_target
+from target import (compute_spatial_target_bins, get_trial_target,
+                    create_df_target, fit_anova_target)
 from serial import compute_serial_position_fr, create_df_serial, fit_anova_serial
 from reports import create_unit_info, create_unit_str
 
@@ -177,18 +179,12 @@ def main():
                 empty_trials = select_from_list(all_chests, empty_mask)
                 full_trials = select_from_list(all_chests, full_mask)
 
-                # Calculate firing rate pre & post chest opening
-                fr_pre_all, fr_post_all = calc_trial_frs(all_chests)
-                fr_pre_empt, fr_post_empt = calc_trial_frs(empty_trials)
-                fr_pre_full, fr_post_full = calc_trial_frs(full_trials)
-
                 # Compute bin edges
                 x_bin_edges, y_bin_edges = compute_bin_edges(\
                     positions, ANALYSIS_SETTINGS['PLACE_BINS'], area_range=area_range)
 
                 # Get position values for each spike
-                spike_xs, spike_ys = get_spike_positions(spikes, ptimes, positions)
-                spike_positions = np.array([spike_xs, spike_ys])
+                spike_positions = get_values_by_times(ptimes, positions, spikes, threshold=0.25)
 
                 # Compute occupancy
                 occ_kwargs = {'minimum' : ANALYSIS_SETTINGS['MIN_OCCUPANCY'],
@@ -203,7 +199,7 @@ def main():
                 bin_firing = bin_firing / occ
 
                 # Get head direction for each spike
-                #spike_hds = get_spike_heading(spikes, hd_times, hd_degrees)
+                #spike_hds = get_values_by_times(hd_times, hd_degrees, spikes, threshold=0.25)
 
                 # Compute edges for chest binning
                 ch_x_edges, ch_y_edges = compute_bin_edges(\
@@ -222,13 +218,16 @@ def main():
 
                 ## STATISTICS
 
-                # Compute t-tests for chest related firing
-                results['fr_t_val_all'], results['fr_p_val_all'] = \
-                    ttest_rel(*calc_trial_frs(all_chests, average=False))
-                results['fr_t_val_empt'], results['fr_p_val_empt'] = \
-                    ttest_rel(*calc_trial_frs(full_trials, average=False))
-                results['fr_t_val_full'], results['fr_p_val_full'] = \
-                    ttest_rel(*calc_trial_frs(empty_trials, average=False))
+                # Compare pre/post chest events, computing firing rates & t-test comparison
+                fr_pre_all, fr_post_all, results['fr_t_val_all'], results['fr_p_val_all'] = \
+                    = compare_pre_post_activity(all_chests, \
+                        ANALYSIS_SETTINGS['PRE_WINDOW'], ANALYSIS_SETTINGS['POST_WINDOW'])
+                fr_pre_empt, fr_post_empt, results['fr_t_val_empt'], results['fr_p_val_empt'] = \
+                    = compare_pre_post_activity(empty_trials, \
+                        ANALYSIS_SETTINGS['PRE_WINDOW'], ANALYSIS_SETTINGS['POST_WINDOW'])
+                fr_pre_full, fr_post_full, results['fr_t_val_full'], results['fr_p_val_full'] = \
+                    = compare_pre_post_activity(full_trials, \
+                        ANALYSIS_SETTINGS['PRE_WINDOW'], ANALYSIS_SETTINGS['POST_WINDOW'])
 
                 # Place cell analysis
                 if METHOD_SETTINGS['PLACE'] == 'INFO':
@@ -294,7 +293,7 @@ def main():
                     surrs['sp_anova'][ind] = fit_anova_serial(create_df_serial(s_sp_all_frs))
 
                     # HEAD DIRECTION
-                    #s_spike_hds = get_spike_heading(shuffle, hd_times, hd_degrees)
+                    #s_spike_hds = get_values_by_times(hd_times, hd_degrees, shuffle, threshold=0.25)
                     #surrs['hd_stat'][ind] = circ_rayleigh(convert_angles(s_spike_hds))[0]
 
                 # Compute surrogate statistics
@@ -323,9 +322,9 @@ def main():
                 plot_isis(compute_isis(spikes), bins=100, range=(0, 2), ax=get_grid_subplot(grid, 0, 2))
 
                 # 10: chest related firing
-                title_str = '{} - Pre: {:1.2f} - Pos: {:1.2f}  (t:{:1.2f}, p:{:1.2f})'
                 plot_rasters(all_chests, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'], vline=0,
-                             title=title_str.format('All Chests', fr_pre_all, fr_post_all, fr_t_val_all, results['fr_p_val_all']),
+                             title=create_trial_title('All Chests', \
+                                fr_pre_all, fr_post_all, fr_t_val_all, results['fr_p_val_all']),
                              title_color=color_pval(results['fr_p_val_all']),
                              ax=get_grid_subplot(grid, slice(1, 3), slice(0, 2)))
 
@@ -333,13 +332,15 @@ def main():
                 # 12&22: Compare Empty & Full chest trials
                 # Empty chest trials
                 plot_rasters(empty_trials, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'], vline=0,
-                             title=title_str.format('Empty', fr_pre_empt, fr_post_empt, fr_t_val_empt, results['fr_p_val_empt']),
+                             title=create_trial_title('Empty', \
+                                fr_pre_empt, fr_post_empt, fr_t_val_empt, results['fr_p_val_empt']),
                              title_color=color_pval(results['fr_p_val_empt']), title_fontsize=14,
                              ax=get_grid_subplot(grid, 1, 2))
 
                 # Full chest trials
                 plot_rasters(full_trials, xlim=ANALYSIS_SETTINGS['TRIAL_RANGE'], vline=0,
-                             title=title_str.format('Full', fr_pre_full, fr_post_full, fr_t_val_full, results['fr_p_val_full']),
+                             title=create_trial_title('Full', \
+                                fr_pre_full, fr_post_full, fr_t_val_full, results['fr_p_val_full']),
                              title_color=color_pval(results['fr_p_val_full']), title_fontsize=14,
                              ax=get_grid_subplot(grid, 2, 2))
 
