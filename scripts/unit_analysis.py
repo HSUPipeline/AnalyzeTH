@@ -41,7 +41,7 @@ sys.path.append('../code')
 from place import get_trial_place, compute_place_bins, create_df_place, fit_anova_place
 from target import (compute_spatial_target_bins, get_trial_target,
                     create_df_target, fit_anova_target)
-from serial import compute_serial_position_fr, create_df_serial, fit_anova_serial
+from serial import create_df_serial, fit_anova_serial
 from reports import create_unit_info, create_unit_str
 
 ###################################################################################################
@@ -120,6 +120,9 @@ def main():
         positions = np.hstack(positions_trials)
         stimes = np.hstack(stimes_trials)
         speed = np.hstack(speed_trials)
+
+        # Combine segment times for serial position analyses
+        serial_seg_times = np.insert(np.array(chest_openings), 0, nav_starts, axis=1)
 
         # Extract head position data
         # hd_times = nwbfile.acquisition['heading']['direction'].timestamps[:]
@@ -250,7 +253,7 @@ def main():
                     results['target_anova'] = fit_anova_target(create_df_target(target_trial))
 
                 # Serial position analysis
-                sp_all_frs = compute_serial_position_fr(spikes, nav_starts, chest_openings, chest_trials)
+                sp_all_frs = compute_segment_frs(spikes, serial_seg_times)
                 results['sp_anova'] = fit_anova_serial(create_df_serial(sp_all_frs))
 
                 # Compute measures for head direction
@@ -292,6 +295,7 @@ def main():
                         surrs['target_anova'][ind] = fit_anova_target(create_df_target(s_target_trial))
 
                     # SERIAL POSITION
+                    sp_all_frs = compute_segment_frs(shuffle, serial_seg_times)
                     s_sp_all_frs = compute_serial_position_fr(\
                         shuffle, nav_starts, chest_openings, chest_trials)
                     surrs['sp_anova'][ind] = fit_anova_serial(create_df_serial(s_sp_all_frs))
