@@ -44,7 +44,7 @@ def get_trial_target(nav_starts, openings, spikes, chest_bins,
     for t_ind in range(n_trials):
 
         # Get chest and opening events of current trial
-        t_openings = chest_openings[t_ind]
+        t_openings = openings[t_ind]
         t_mask = chest_trials == t_ind
 
         # Get navigation start & end and restrict spikes to this range
@@ -71,7 +71,7 @@ def get_trial_target(nav_starts, openings, spikes, chest_bins,
     return target_bins_all
   
   
-def compute_spatial_target_bins(chest_occupancy, target_bins_all, set_nan=False):
+def compute_spatial_target_bins(chest_occupancy, target_bins_all, chest_bins, set_nan=False):
     """Compute the binned firing rate based on spatial target."""
     
     chest_occupancy[chest_occupancy == 0.] = np.nan
@@ -82,7 +82,8 @@ def compute_spatial_target_bins(chest_occupancy, target_bins_all, set_nan=False)
     target_bins_sum[target_bins_sum == 0.] = np.nan
     
     # Compute the averaged firing rate per bin across trials
-    target_bins = ((target_bins_sum / chest_occ).reshape(5, 7)).transpose()
+    target_bins = ((target_bins_sum / chest_occ).reshape(chest_bins)).transpose()
+    target_bins = np.nan_to_num(target_bins)
     
     if set_nan:
         target_bins[target_bins == 0.] = np.nan
