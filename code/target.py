@@ -33,7 +33,7 @@ fit_anova_target = partial(fit_anova, formula=MODEL, feature=FEATURE)
 ###################################################################################################
 
 def get_trial_target(nav_starts, openings, spikes, chest_bins, 
-                     chest_trials, chest_xbin, chest_ybin):
+                     chest_trials, chest_xbin, chest_ybin, set_nan=False):
   """Get the binned target firing, per trial."""
     
     n_trials = len(openings)
@@ -67,6 +67,9 @@ def get_trial_target(nav_starts, openings, spikes, chest_bins,
             target_bins[xbin, ybin] = fr
 
         target_bins_all[t_ind, :] = target_bins.flatten()
+    
+    if set_nan:
+      target_bins_all[target_bins_all == 0.] =np.nan
         
     return target_bins_all
   
