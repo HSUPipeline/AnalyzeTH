@@ -36,8 +36,10 @@ def create_group_str(group_info):
 def create_group_sessions_str(summary):
     """Create strings of detailed session information."""
 
+    strtemp = "{} ({:3d} trials): {:3d} keep units ({:3d} total), " \
+               "({:5.2f}% correct, avg error: {:5.2f})"
+
     out = []
-    strtemp = "{} ({:3d} trials): {:3d} keep units ({:3d} total), ({:5.2f}% correct, avg error: {:5.2f})"
     for ind in range(len(summary['ids'])):
         out.append(strtemp.format(summary['ids'][ind], summary['n_trials'][ind],
                                   summary['n_keep'][ind], summary['n_units'][ind],
@@ -73,7 +75,7 @@ def create_subject_str(subject_info):
         'Recording:  {:5s}'.format(subject_info['session_id']),
         'Total # units:   {:10d}'.format(subject_info['n_units']),
         'Keep # units:    {:10d}'.format(subject_info['n_keep']),
-        'Session length:     {:.2f}'.format(subject_info['length'])
+        'Session length:     {:.2f}'.format(subject_info['session_length'])
     ])
 
     return string
