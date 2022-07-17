@@ -58,7 +58,7 @@ def create_subject_info(nwbfile):
     en = nwbfile.intervals['trials'][-1]['stop_time'].values[0]
 
     subject_info['n_units'] = len(nwbfile.units)
-    subject_info['n_keep'] = sum(nwbfile.units.keep[:])
+    subject_info['n_keep'] = int(sum(nwbfile.units.keep[:]))
     subject_info['subject_id'] = nwbfile.subject.subject_id
     subject_info['session_id'] = nwbfile.session_id
     subject_info['trials_start'] = st
@@ -101,7 +101,7 @@ def create_behav_info(nwbfile):
     behav_info['n_trials'] = len(nwbfile.trials)
     behav_info['n_chests'] = int(sum(nwbfile.trials.n_chests.data[:]))
     behav_info['n_items'] = int(sum(nwbfile.trials.n_treasures.data[:]))
-    behav_info['avg_error'] = np.mean(nwbfile.trials.error.data[:])
+    behav_info['avg_error'] = float(np.mean(nwbfile.trials.error.data[:]))
 
     return behav_info
 

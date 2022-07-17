@@ -1,21 +1,20 @@
 """Run TH analysis across all sessions."""
 
-from collections import Counter
-
 import numpy as np
 
-from convnwb.io import get_files, save_json, load_nwbfile
+from convnwb.io import get_files, save_json, load_nwbfile, file_in_list
 
-from spiketools.measures import compute_spike_rate
+from spiketools.measures import compute_firing_rate
 from spiketools.spatial.occupancy import compute_occupancy
 from spiketools.plts.data import plot_bar, plot_hist, plot_polar_hist, plot_text
 from spiketools.plts.spatial import plot_heatmap, plot_positions
-from spiketools.plts.spikes import plot_unit_frs
+from spiketools.plts.spikes import plot_firing_rates
 from spiketools.plts.utils import make_grid, get_grid_subplot, save_figure
-from spiketools.utils.trials import epoch_data_by_range
+from spiketools.utils.epoch import epoch_data_by_range
+from spiketools.utils.base import count_elements
 
 # Import settings from local file
-from settings import TASK, PATHS, IGNORE, ANALYSIS_SETTINGS
+from settings import TASK, PATHS, IGNORE, BINS, OCCUPANCY
 
 # Import local code
 import sys
@@ -85,23 +84,17 @@ def main():
         keep_inds = np.where(nwbfile.units.keep[:])[0]
         n_keep = len(keep_inds)
 
-        # Get settings
-        BINS = ANALYSIS_SETTINGS['PLACE_BINS']
-        MIN_OCC = ANALYSIS_SETTINGS['MIN_OCCUPANCY']
-
         ## PRECOMPUTE MEASURES OF INTEREST
 
         # Count confidence answers & fix empty values
-        conf_counts = Counter(nwbfile.trials.confidence_response.data[:])
-        for el in ['yes', 'maybe', 'no']:
-            if el not in conf_counts:
-                conf_counts[el] = 0
+        conf_counts = count_elements(nwbfile.trials.confidence_response.data[:],
+                                     labels=['yes', 'maybe', 'no'])
 
         # Calculate unit-wise firing rates, and spatial occupancy
-        frs = [compute_spike_rate(nwbfile.units.get_unit_spike_times(uind)) \
+        frs = [compute_firing_rate(nwbfile.units.get_unit_spike_times(uind)) \
             for uind in keep_inds]
-        occ = compute_occupancy(positions, ptimes, bins=BINS, speed=speed,
-                                minimum=MIN_OCC, area_range=area_range, set_nan=True)
+        occ = compute_occupancy(positions, ptimes, BINS['place'], area_range,
+                                speed=speed, **OCCUPANCY)
 
         # Collect information of interest
         subject_info = create_subject_info(nwbfile)
@@ -134,7 +127,8 @@ def main():
         plot_firing_rates(frs, xticks=[], ax=get_grid_subplot(grid, 0, slice(1, None)))
 
         # 10: position text
-        plot_text(create_position_str(BINS, occ), ax=get_grid_subplot(grid, 1, 0))
+        plot_text(create_position_str(BINS['place'], occ),
+                  ax=get_grid_subplot(grid, 1, 0))
 
         # 11: occupancy map
         plot_heatmap(occ, transpose=True, title='Occupancy',
