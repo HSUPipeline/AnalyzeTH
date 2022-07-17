@@ -3,30 +3,10 @@
 from pathlib import Path
 
 ###################################################################################################
-###################################################################################################
+## FILE / RUN SETTINGS
 
 # Set which task to process
 TASK = 'THO'
-
-## PATHS
-
-# Set the data path to load from
-#BASE_PATH = Path('/Users/tom/Documents/Data/JacobsLab/TH/')
-BASE_PATH = Path('/scratch/tom.donoghue/TH/')
-DATA_PATH = BASE_PATH / 'NWB'
-
-# Set the path to save out reports & results
-REPORTS_PATH = Path('../reports/')
-RESULTS_PATH = Path('../results/')
-
-PATHS = {
-    'BASE' : BASE_PATH,
-    'DATA' : DATA_PATH,
-    'REPORTS' : REPORTS_PATH,
-    'RESULTS' : RESULTS_PATH
-}
-
-## FILE SETTINGS
 
 # Set files to ignore
 IGNORE = []
@@ -44,49 +24,81 @@ UNITS = {
     'CONTINUE_ON_FAIL' : CONTINUE_ON_FAIL
 }
 
-## METHOD SETTINGS
-PLACE_METHOD = 'ANOVA'  # 'INFO', 'ANOVA'
-TARGET_METHOD = 'ANOVA'  # 'INFO', 'ANOVA'
+###################################################################################################
+## PATHS
 
-# Collect together method settings
-METHODS = {
-    'PLACE' : PLACE_METHOD,
-    'TARGET' : TARGET_METHOD
+# Set the data path to load from
+BASE_PATH = Path('/Users/tom/Documents/Data/JacobsLab/TH/')
+#BASE_PATH = Path('/scratch/tom.donoghue/TH/')
+DATA_PATH = BASE_PATH / 'NWB'
+
+# Set the path to save out reports & results
+REPORTS_PATH = Path('../reports/')
+RESULTS_PATH = Path('../results/')
+
+PATHS = {
+    'BASE' : BASE_PATH,
+    'DATA' : DATA_PATH,
+    'REPORTS' : REPORTS_PATH,
+    'RESULTS' : RESULTS_PATH
 }
 
+###################################################################################################
+## METHOD SETTINGS
+
+PLACE_METHOD = 'anova'  # 'info', 'anova'
+TARGET_METHOD = 'anova'  # 'info', 'anova'
+
+METHODS = {
+    'place' : PLACE_METHOD,
+    'target' : TARGET_METHOD
+}
+
+###################################################################################################
 ## ANALYSIS SETTINGS
 
-# Set the time range to analyze
-TRIAL_RANGE = [-1, 1]
-PRE_WINDOW = [-1, 0]
-POST_WINDOW = [0, 1]
+## BIN SETTINGS
 
-# Set the spatial bin definitions
 #PLACE_BINS = [7, 21]
 PLACE_BINS = [9, 12]
 #CHEST_BINS = [5, 7]
 CHEST_BINS = [6, 8]
 
-# Occupancy settings
-MIN_OCCUPANCY = 1
+BINS = {
+    'place' : PLACE_BINS,
+    'chest' : CHEST_BINS,
+}
 
-# Collect together all analysis settings
-ANALYSES = {
-    'TRIAL_RANGE' : TRIAL_RANGE,
-    'PRE' : PRE_WINDOW,
-    'POST' : POST_WINDOW,
-    'PLACE_BINS' : PLACE_BINS,
-    'CHEST_BINS' : CHEST_BINS,
-    'MIN_OCCUPANCY' : MIN_OCCUPANCY
+## OCCUPANCY SETTINGS
+
+OCC_MINIMUM = 1
+OCC_SETNAN = True
+OCC_SPEED_THRESH = 0
+
+OCCUPANCY = {
+    'minimum' : OCC_MINIMUM,
+    'set_nan' : OCC_SETNAN,
+    'speed_threshold' : OCC_SPEED_THRESH
+}
+
+## TIME WINDOW SETTINGS
+
+TRIAL_RANGE = [-1, 1]
+PRE_WINDOW = [-1, 0]
+POST_WINDOW = [0, 1]
+
+WINDOWS = {
+    'trial_range' : TRIAL_RANGE,
+    'pre' : PRE_WINDOW,
+    'post' : POST_WINDOW,
 }
 
 ## SURROGATE SETTINGS
 
-# Settings for surrogate analyses
-N_SURROGATES = 500
 SHUFFLE_APPROACH = 'CIRCULAR'   # 'CIRCULAR', 'BINCIRC'
+N_SHUFFLES = 500
 
 SURROGATES = {
-    'N_SURROGATES' : N_SURROGATES,
-    'SHUFFLE_APPROACH' : SHUFFLE_APPROACH
+    'approach' : SHUFFLE_APPROACH,
+    'n_shuffles' : N_SURROGATES
 }
