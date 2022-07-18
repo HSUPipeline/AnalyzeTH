@@ -16,7 +16,7 @@ IGNORE = []
 # Set whether to skip units that have already been processed
 SKIP_ALREADY_RUN = False
 SKIP_FAILED = False
-CONTINUE_ON_FAIL = True
+CONTINUE_ON_FAIL = False
 
 UNITS = {
     'SKIP_ALREADY_RUN' : SKIP_ALREADY_RUN,
@@ -46,12 +46,15 @@ PATHS = {
 ###################################################################################################
 ## METHOD SETTINGS
 
-PLACE_METHOD = 'anova'  # 'info', 'anova'
-TARGET_METHOD = 'anova'  # 'info', 'anova'
+# Define which method(s) to run (all within list will be run)
+PLACE_METHODS = ['ANOVA', 'INFO']    # 'info', 'anova'
+TARGET_METHODS = ['ANOVA', 'INFO']   # 'info', 'anova'
+SERIAL_METHODS = ['ANOVA']           # 'anova'
 
 METHODS = {
-    'place' : PLACE_METHOD,
-    'target' : TARGET_METHOD
+    'PLACE' : PLACE_METHODS,
+    'TARGET' : TARGET_METHODS,
+    'SERIAL' : SERIAL_METHODS
 }
 
 ###################################################################################################
@@ -73,12 +76,14 @@ BINS = {
 
 OCC_MINIMUM = 1
 OCC_SETNAN = True
-OCC_SPEED_THRESH = 0
+OCC_SPEED_THRESH = 0 # 5e-6
+OCC_TIME_THRESH = 0.25
 
 OCCUPANCY = {
     'minimum' : OCC_MINIMUM,
     'set_nan' : OCC_SETNAN,
-    'speed_threshold' : OCC_SPEED_THRESH
+    'speed_threshold' : OCC_SPEED_THRESH,
+    'time_threshold' : OCC_TIME_THRESH
 }
 
 ## TIME WINDOW SETTINGS
@@ -96,9 +101,9 @@ WINDOWS = {
 ## SURROGATE SETTINGS
 
 SHUFFLE_APPROACH = 'CIRCULAR'   # 'CIRCULAR', 'BINCIRC'
-N_SHUFFLES = 500
+N_SHUFFLES = 25
 
 SURROGATES = {
     'approach' : SHUFFLE_APPROACH,
-    'n_shuffles' : N_SURROGATES
+    'n_shuffles' : N_SHUFFLES
 }
