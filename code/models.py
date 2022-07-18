@@ -2,7 +2,7 @@
 
 from functools import partial
 
-from spiketools.stats.anova import create_dataframe_bins, fit_anova
+from spiketools.stats.anova import create_dataframe, create_dataframe_bins, fit_anova
 
 ###################################################################################################
 ###################################################################################################
@@ -26,6 +26,7 @@ TARGET = {
     'COLUMNS' : ['target_bin', 'fr']
 }
 
+create_df_target = create_dataframe
 fit_anova_target = partial(fit_anova, formula=TARGET['MODEL'], feature=TARGET['FEATURE'])
 
 ## SERIAL POSITION MODELS
