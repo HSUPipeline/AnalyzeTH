@@ -245,16 +245,25 @@ def get_probability_histogram_from_hd_histogram(hd_histogram):
 ##################################################################
 
 
-def compute_std_ci95_from_surrogates(surrogates):
+def compute_std_ci95_from_surrogates(surrogates, ci = 95):
     """
     For each bin compute the ci95, return as 2d array high over low for each bin
     """
+    if ci == 95:
+        Z = 1.96
+    if ci == 99:
+        Z = 2.576
+    if ci ==  99.5:
+        Z = 2.807
+    if ci == 99.9:
+        Z =  3.291
+
     n_surrogates, n_bins = surrogates.shape[0], surrogates.shape[1]
     ci_low, ci_high = [], []
     for ix in range(n_bins):
         bin =  surrogates[:,ix]
         mean = np.mean(bin)
-        s = 1.96 * np.std(bin)/np.sqrt(n_surrogates)
+        s = Z * np.std(bin)/np.sqrt(n_surrogates)
         ci_low.append(mean-s)
         ci_high.append(mean+s)
     ci95 = np.vstack([ci_high, ci_low])
@@ -375,15 +384,15 @@ def compute_significant_bins(hd_histogram, confidence_interval):
         bin + 5 bins on each side)
 
     """
-    hd_mask = hd_histogram > confidence_interval[0]
-    hd_mask_circle = np.hstack([hd_mask, hd_mask[:10]])
+    hd_mask = hd_histogram > 1.25 * confidence_interval[0]
+    hd_mask_circle = np.hstack([hd_mask, hd_mask[:100]])
 
     num_bins = len(hd_histogram)
     significant_bins = np.zeros(num_bins)
     for ix in range(num_bins):
         if hd_mask_circle[ix] == True:
             sig = True
-            for jx in range(ix-5,ix+6):
+            for jx in range(ix-5,ix+5):
                 if hd_mask_circle[jx] == False:
                     sig = False
             significant_bins[ix] = sig
@@ -391,3 +400,22 @@ def compute_significant_bins(hd_histogram, confidence_interval):
 
 
 
+def compute_significant_clusters(significant_bins):
+    """Determine number of significant clusters"""
+    count = 0
+    prior = 0 
+    for bin in significant_bins:
+        if bin == prior:
+            continue
+        if bin == 1 and bin != prior:
+            count +=1
+        prior = bin
+    return count
+
+def compute_hd_score_temp(hd_histogram, confidence_interval):
+    hd_strength = hd_histogram - 1.25 * confidence_interval[0]
+    for ix, val in enumerate(hd_strength):
+        if val < 0:
+            hd_strength[ix] = 0
+    hd_score = sum(hd_strength)
+    return hd_score

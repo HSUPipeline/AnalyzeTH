@@ -92,6 +92,7 @@ def nwb_headDirection_session(nwbfile, settings = SETTINGS, plot=False, save_rep
 
     # Run across each unit
     n_units = len(nwbfile.units)
+    print(f'Num Units {n_units}')
     for ix in range(n_units):
 
         # break for testing
@@ -107,12 +108,18 @@ def nwb_headDirection_session(nwbfile, settings = SETTINGS, plot=False, save_rep
         os.makedirs(save_dir, exist_ok=True)
         
         try:
-            # Run 
+            # Skip Low FR 
+            mean_firing_rate = nwb_compute_navigation_mean_firing_rate(nwbfile, ix)
+            if mean_firing_rate <= 0.5:
+                print('....Low FR')
+                continue
+
+            # Run
             res = nwb_headDirection_cell(
                 nwbfile, 
                 unit_ix = ix, 
                 occupancy = occupancy,
-                n_surrogates= SETTINGS.N_SURROGATES
+                n_surrogates= 300
             )
 
             # Plot & Save
@@ -131,29 +138,162 @@ def nwb_headDirection_session(nwbfile, settings = SETTINGS, plot=False, save_rep
 
             # Build and save Dataframe
             df = pd.json_normalize(res, sep='.')
-            df_name = res['metadata']['session_id'] + '_unit' + str(ix) + '_DF.feather'
+            df_name = res['metadata']['session_id'] + '_unit' + str(ix) + '_DF.csv'
             fpath = os.path.join(save_dir, df_name)
-            df.to_feather(fpath)
+            df.to_csv(fpath)
 
         except Exception as e:
             print('\t Error')
             print('\t', e)
             
             # Save dummy
-            df = pd.DataFrame({'ERROR': e})
+            df = pd.DataFrame([{'ERROR': str(e)}])
             df_name = nwbfile.session_id + '_unit' + str(ix) + '_DF.ERROR'
             fpath = os.path.join(save_dir, df_name)
-            df.to_feather(fpath)
+            df.to_csv(fpath)
 
     return 
 
 
-def nwb_headDirection_cell(nwbfile, unit_ix, 
+
+def nwb_headDirection_cell(nwbfile, unit_ix, settings = None, occupancy = []): 
+        # occupancy = [], 
+        # n_surrogates = 300, 
+        # binsize = 1, 
+        # windowsize = 23,
+        # ci = 99, 
+        # smooth = True, 
+        # plot = False,
+        # ):
+    """
+    Run head direction analysis for unit and compare to surrogates
+    """
+
+    # Exceptions 
+    # - Firing rates
+    mean_firing_rate = nwb_compute_navigation_mean_firing_rate(nwbfile, unit_ix)
+    if mean_firing_rate < 0.5:
+        print(f'low FR \t {mean_firing_rate}')
+        res = {
+            'FR' : mean_firing_rate,
+            'metadata'  :   {
+                'hd_score'   : 'none'
+            }
+        }
+        return res
+
+
+
+    # Metadata -- CLEAN
+    subject = nwbfile.subject.subject_id
+    session_id = nwbfile.session_id
+    n_trials = len(nwbfile.trials)
+    n_units = len(nwbfile.units)
+    spikes = nwbfile.units.get_unit_spike_times(unit_ix)
+    n_spikes_tot = len(spikes)
+    navigation_start_times = nwbfile.trials['navigation_start'][:]
+    navigation_stop_times = nwbfile.trials['navigation_stop'][:]
+    len_epochs = navigation_stop_times - navigation_start_times
+    total_time = sum(len_epochs)
+    spikes_navigation = subset_period_event_time_data(spikes, navigation_start_times, navigation_stop_times)
+    n_spikes_navigation = len(spikes_navigation)
+    firing_rates_over_time, mean_firing_rates_over_time = nwb_compute_navigation_firing_rates_over_time(nwbfile, unit_ix, return_means=True)
+    
+
+    # Occupancy
+    if occupancy == []:
+        occupancy = compute_hd_occupancy(nwbfile, binsize, windowsize, smooth)
+    
+
+    # Head direction
+    hd_hist = nwb_hd_cell_hist(nwbfile, unit_ix, binsize, windowsize, smooth)
+    #hd_score = compute_hd_score(hd_hist)
+    hd_hist_norm = normalize_hd_hist_to_occupancy(hd_hist, occupancy)
+    #hd_norm_score = compute_hd_score(hd_hist)
+
+    # Shuffle
+    shuffled_spikes = nwb_shuffle_spikes_bincirc_navigation(nwbfile, unit_ix, n_surrogates, shift_range = [5, 20], verbose=False)
+    head_direction = nwbfile.acquisition['heading']['direction']
+    hd_times = head_direction.timestamps[:]
+    hd_degrees = head_direction.data[:]
+    surrogate_hds = get_hd_shuffled_head_directions(shuffled_spikes, hd_times, hd_degrees)
+    surrogate_histograms = get_hd_surrogate_histograms(surrogate_hds, binsize, windowsize, smooth)
+    surrogates_norm = normalize_hd_surrogate_histograms_to_occupancy(surrogate_histograms, occupancy)
+    
+    # ci95
+    #surrogates_ci95 = compute_pdf_ci95_from_surrogates(surrogates_norm)
+    #surrogates_ci95 = bootstrap_ci_from_surrogates(surrogates_norm)                                               
+    surrogates_ci95 = compute_std_ci95_from_surrogates(surrogates_norm, ci=ci )
+    significant_bins = compute_significant_bins(hd_hist_norm, surrogates_ci95)
+    significant_clusters = compute_significant_clusters(significant_bins)
+
+    # hd strength
+    hd_score = compute_hd_score_temp(hd_hist_norm, surrogates_ci95)
+
+    hd_ax=None
+    if plot:
+        #print(hd_hist_norm.shape)
+        #print(surrogates_ci95.shape)
+        #print(significant_bins.shape)
+
+        title = session_id + f' | Unit {unit_ix}'
+        hd_ax = plot_hd_full(hd_hist_norm, surrogates_ci95, significant_bins)
+        print('show')
+        plt.show()
+
+    res = {
+        'metadata' : {
+            'subject'                       : subject,
+            'session_id'                    : session_id,
+            'unit_ix'                       : unit_ix, 
+            'nspikes'                       : n_spikes_tot,
+            'nspikes_nav'                   : n_spikes_navigation,
+            'navtime'                       : total_time,
+            'n_units'                       : n_units,
+            'n_trials'                      : n_trials,
+            'n_surrogates'                  : n_surrogates,
+            'hd_score'                      : hd_score,
+            #'hd_score_norm'                 : hd_norm_score
+        },
+
+        # 'occupancy': {
+        #     'occupancy_norm'                : occupancy,
+        # },
+
+        'head_direction' : {
+            #'hd_score'                      : hd_score,
+            #'hd_score_norm'                 : hd_norm_score,
+            # 'hd_histogram'                  : hd_hist,
+            'hd_histogram_norm'             : hd_hist_norm
+        },
+        
+        'surrogates' : {
+            # 'surrogate_hds'                 : surrogate_hds,
+            # 'surrogate_histograms'          : surrogate_histograms,
+            'surrogate_histograms_norm'     : surrogates_norm,
+            'surrogates_ci'                 : surrogates_ci95,
+            'significant_bins'              : significant_bins,
+            'significant_clusters'          : significant_clusters
+        },
+        
+        'firing_rates' : {
+            # 'firing_rates_over_time'        : firing_rates_over_time,
+            # 'mean_firing_rates_over_time'   : mean_firing_rates_over_time,
+            'mean_firing_rate'              : mean_firing_rate
+
+        }
+    }
+    return res
+
+#################################
+
+def nwb_headDirection_cell_old(nwbfile, unit_ix, 
         occupancy = [], 
         n_surrogates = 1000, 
         binsize = 1, 
-        windowsize = 23, 
-        smooth = True, 
+        windowsize = 23,
+        ci = 99, 
+        smooth = False, 
         plot = False,
         ):
     """
@@ -199,10 +339,11 @@ def nwb_headDirection_cell(nwbfile, unit_ix,
     # ci95
     #surrogates_ci95 = compute_pdf_ci95_from_surrogates(surrogates_norm)
     #surrogates_ci95 = bootstrap_ci_from_surrogates(surrogates_norm)                                               
-    surrogates_ci95 = compute_std_ci95_from_surrogates(surrogates_norm)
+    surrogates_ci95 = compute_std_ci95_from_surrogates(surrogates_norm, ci=ci )
     significant_bins = compute_significant_bins(hd_hist_norm, surrogates_ci95)
+    significant_clusters = compute_significant_clusters(significant_bins)
 
-    hd_ax=None
+    hd_ax = None
     if plot:
         print(hd_hist_norm.shape)
         print(surrogates_ci95.shape)
@@ -226,28 +367,29 @@ def nwb_headDirection_cell(nwbfile, unit_ix,
             'hd_score_norm'                 : hd_norm_score
         },
 
-        'occupancy': {
-            'occupancy_norm'                : occupancy,
-        },
+        # 'occupancy': {
+        #     'occupancy_norm'                : occupancy,
+        # },
 
         'head_direction' : {
             'hd_score'                      : hd_score,
             'hd_score_norm'                 : hd_norm_score,
-            'hd_histogram'                  : hd_hist,
-            'hd_histogram_norm'             : hd_hist_norm,
+            # 'hd_histogram'                  : hd_hist,
+            'hd_histogram_norm'             : hd_hist_norm
         },
         
         'surrogates' : {
-            'surrogate_hds'                 : surrogate_hds,
-            'surrogate_histograms'          : surrogate_histograms,
+            # 'surrogate_hds'                 : surrogate_hds,
+            # 'surrogate_histograms'          : surrogate_histograms,
             'surrogate_histograms_norm'     : surrogates_norm,
-            'surrogates_ci95'               : surrogates_ci95,
+            'surrogates_ci'                 : surrogates_ci95,
             'significant_bins'              : significant_bins,
+            'significant_clusters'          : significant_clusters
         },
         
         'firing_rates' : {
-            'firing_rates_over_time'        : firing_rates_over_time,
-            'mean_firing_rates_over_time'   : mean_firing_rates_over_time,
+            # 'firing_rates_over_time'        : firing_rates_over_time,
+            # 'mean_firing_rates_over_time'   : mean_firing_rates_over_time,
             'mean_firing_rate'              : mean_firing_rate
 
         }

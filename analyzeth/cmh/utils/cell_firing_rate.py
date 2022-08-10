@@ -9,8 +9,8 @@ from spiketools.utils import restrict_range
 
 def cell_firing_rate(
         spikes,       #sec  
-        epoch_start_time,
-        epoch_stop_time, 
+        start_time = None,
+        stop_time = None, 
         window = 1,   #sec, must be 1 for Hz
         step = 0.1    #sec 
         ):
@@ -42,13 +42,18 @@ def cell_firing_rate(
         length of array depends on step size
 
     """
+    # Set start and stop times
+    if not start_time:
+        start_time = spikes[0]
+    if not stop_time:
+        stop_time = spikes[-1]
     
     # Reflect edges by window size (1sec)
     #window = int(window) if ((int(window) % 2) == 0) else int(window) + 1     # make window even
-    len_epoch = epoch_stop_time - epoch_start_time
+    len_epoch = stop_time - start_time
 
     # Zero to start of epoch
-    spikes = spikes - epoch_start_time
+    spikes = spikes - start_time
 
     # Start reflection (easy, * -1)
     start_reflection = -1 * spikes[spikes < window]
@@ -72,7 +77,7 @@ def cell_firing_rate(
     times = []
     FRs = []                                       
     for ix_win in range(num_bins):
-        center = step*ix_win #epoch_start_time + step * ix_win
+        center = step*ix_win #start_time + step * ix_win
         left = center - window/2
         right = center + window/2
         spikes_bin = spikes[(left<spikes) & (spikes < right)]
@@ -93,7 +98,7 @@ def cell_firing_rate(
 
 def compute_epochs_firing_rates_over_time (spikes, epoch_start_times, epoch_stop_times, window = 1, step = 0.1, return_means = False):
     """
-    Compute mean firing rate at eacch step across all epochs of interest (i.e. navigation periods)
+    Compute mean firing rate at each step across all epochs of interest (i.e. navigation periods)
     """
     firing_rates_over_time = []
     fr_times = []

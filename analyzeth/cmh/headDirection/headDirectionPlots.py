@@ -361,7 +361,7 @@ def plot_headDirection_summary_PDF(nwbfile, res, occupancy, save_fig = False):
     ax1 = fig.add_subplot(gs[0:4,2:6], polar=True)
     ax = ax1
     hd_hist_norm = res['head_direction']['hd_histogram_norm']
-    surrogates_ci95 = res['surrogates']['surrogates_ci95']
+    surrogates_ci95 = res['surrogates']['surrogates_ci']
     significant_bins = res['surrogates']['significant_bins']
     ax = plot_hd_full(hd_hist_norm, surrogates_ci95, significant_bins, ax = ax, title = 'Normalized Head Direction vs. Surrogates')
 

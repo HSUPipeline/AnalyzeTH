@@ -1,0 +1,7 @@
+
+unimodal    THF_wv004_session_1 86 
+bimodal     THF_wv001_session_2 3
+trimodal    THO_wv001_session_2 82 
+tetramodal  THF_wv001_session_0 0
+pentamodal  THO_wv001_session_2 67
+pentamodal  THF_wv004_session_1 56
