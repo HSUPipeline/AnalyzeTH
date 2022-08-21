@@ -3,6 +3,7 @@
 import numpy as np
 
 from convnwb.io import get_files, save_json, load_nwbfile, file_in_list
+from convnwb.utils import print_status
 
 from spiketools.measures import compute_firing_rate
 from spiketools.spatial.occupancy import compute_occupancy

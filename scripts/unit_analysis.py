@@ -54,12 +54,12 @@ def main():
     print_status(RUN['VERBOSE'], '\n\nANALYZING UNIT DATA - {}\n\n'.format(RUN['TASK']), 0)
 
     # Get the list of NWB files
-    nwbfiles = get_files(PATHS['DATA'], select=TASK)
+    nwbfiles = get_files(PATHS['DATA'], select=RUN['TASK'])
 
     # Get list of already generated and failed units, & drop file names
-    output_files = get_files(PATHS['RESULTS'] / 'units' / TASK,
+    output_files = get_files(PATHS['RESULTS'] / 'units' / RUN['TASK'],
                              select='json', drop_extensions=True)
-    failed_files = get_files(PATHS['RESULTS'] / 'units' / TASK / 'zFailed',
+    failed_files = get_files(PATHS['RESULTS'] / 'units' / RUN['TASK'] / 'zFailed',
                              select='json', drop_extensions=True)
 
     for nwbfilename in nwbfiles:
@@ -67,7 +67,7 @@ def main():
         ## DATA LOADING
 
         # Check and ignore files set to ignore
-        if file_in_list(nwbfilename, IGNORE):
+        if file_in_list(nwbfilename, RUN['IGNORE']):
             print_status(RUN['VERBOSE'], '\nSkipping file (set to ignore): {}'.format(nwbfilename), 0)
             continue
 
@@ -299,7 +299,7 @@ def main():
                         compute_surrogate_stats(results[analysis], surrs[analysis])
 
                 # Save out unit results
-                save_json(results, name + '.json', folder=str(PATHS['RESULTS'] / 'units' / TASK))
+                save_json(results, name + '.json', folder=str(PATHS['RESULTS'] / 'units' / RUN['TASK']))
 
                 ### MAKE REPORT
 
@@ -392,14 +392,14 @@ def main():
                 #                 ax=get_grid_subplot(grid, 3, 2, polar=True))
 
                 # Save out report
-                save_figure('unit_report_' + name + '.pdf', PATHS['REPORTS'] / 'units' / TASK, close=True)
+                save_figure('unit_report_' + name + '.pdf', PATHS['REPORTS'] / 'units' / RUN['TASK'], close=True)
 
             except Exception as excp:
                 if not UNITS['CONTINUE_ON_FAIL']:
                     raise
                 print_status(RUN['VERBOSE'], 'issue running unit # {}'.format(uid), 2)
                 save_txt(traceback.format_exc(), name,
-                         folder=str(PATHS['RESULTS'] / 'units' / TASK / 'zFailed'))
+                         folder=str(PATHS['RESULTS'] / 'units' / RUN['TASK'] / 'zFailed'))
 
         # Close the nwbfile
         io.close()

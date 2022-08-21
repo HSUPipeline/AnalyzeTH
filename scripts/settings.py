@@ -36,7 +36,7 @@ PATHS = {
     'BASE' : BASE_PATH,
     'DATA' : DATA_PATH,
     'REPORTS' : REPORTS_PATH,
-    'RESULTS' : RESULTS_PATH
+    'RESULTS' : RESULTS_PATH,
 }
 
 ###################################################################################################
@@ -64,7 +64,7 @@ SERIAL_METHODS = ['ANOVA']           # 'anova'
 METHODS = {
     'PLACE' : PLACE_METHODS,
     'TARGET' : TARGET_METHODS,
-    'SERIAL' : SERIAL_METHODS
+    'SERIAL' : SERIAL_METHODS,
 }
 
 ###################################################################################################
@@ -93,7 +93,7 @@ OCCUPANCY = {
     'minimum' : OCC_MINIMUM,
     'set_nan' : OCC_SETNAN,
     'speed_threshold' : OCC_SPEED_THRESH,
-    'time_threshold' : OCC_TIME_THRESH
+    'time_threshold' : OCC_TIME_THRESH,
 }
 
 ## TIME WINDOW SETTINGS
@@ -115,5 +115,5 @@ N_SHUFFLES = 25
 
 SURROGATES = {
     'approach' : SHUFFLE_APPROACH,
-    'n_shuffles' : N_SHUFFLES
+    'n_shuffles' : N_SHUFFLES,
 }
