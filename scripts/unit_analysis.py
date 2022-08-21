@@ -8,6 +8,7 @@ from scipy.stats import sem
 #from pingouin import convert_angles, circ_rayleigh
 
 from convnwb.io import load_nwbfile, get_files, save_json, save_txt, file_in_list
+from convnwb.utils import print_status
 
 from spiketools.measures import compute_isis
 from spiketools.measures.trials import compute_segment_frs
@@ -34,7 +35,7 @@ from spiketools.utils.base import select_from_list
 from spiketools.utils.run import create_methods_list
 
 # Import settings from local file
-from settings import TASK, PATHS, IGNORE, UNITS, METHODS, BINS, OCCUPANCY, WINDOWS, SURROGATES
+from settings import RUN, PATHS, UNITS, METHODS, BINS, OCCUPANCY, WINDOWS, SURROGATES
 
 # Import local code
 import sys
@@ -50,7 +51,7 @@ from reports import create_unit_info, create_unit_str
 def main():
     """Run analyses across all units."""
 
-    print('\n\nANALYZING UNIT DATA - {}\n\n'.format(TASK))
+    print_status(RUN['VERBOSE'], '\n\nANALYZING UNIT DATA - {}\n\n'.format(RUN['TASK']), 0)
 
     # Get the list of NWB files
     nwbfiles = get_files(PATHS['DATA'], select=TASK)
@@ -67,11 +68,11 @@ def main():
 
         # Check and ignore files set to ignore
         if file_in_list(nwbfilename, IGNORE):
-            print('\nSkipping file (set to ignore): ', nwbfilename)
+            print_status(RUN['VERBOSE'], '\nSkipping file (set to ignore): {}'.format(nwbfilename), 0)
             continue
 
         # Print out status
-        print('\nRunning unit analysis: ', nwbfilename)
+        print_status(RUN['VERBOSE'], '\nRunning unit analysis: {}'.format(nwbfilename), 0)
 
         # Load NWB file
         nwbfile, io = load_nwbfile(nwbfilename, PATHS['DATA'], return_io=True)
@@ -141,14 +142,14 @@ def main():
 
             # Check if unit already run
             if UNITS['SKIP_ALREADY_RUN'] and file_in_list(name, output_files):
-                print('\tskipping unit (already run): \tU{:02d}'.format(uid))
+                print_status(RUN['VERBOSE'], 'skipping unit (already run): \tU{:02d}'.format(uid), 1)
                 continue
 
             if UNITS['SKIP_FAILED'] and file_in_list(name, failed_files):
-                print('\tskipping unit (failed): \tU{:02d}'.format(uid))
+                print_status(RUN['VERBOSE'], 'skipping unit (failed): \tU{:02d}'.format(uid), 1)
                 continue
 
-            print('\trunning unit: \t\t\tU{:02d}'.format(uid))
+            print_status(RUN['VERBOSE'], 'running unit: \t\t\tU{:02d}'.format(uid), 1)
 
             try:
 
@@ -396,14 +397,14 @@ def main():
             except Exception as excp:
                 if not UNITS['CONTINUE_ON_FAIL']:
                     raise
-                print('\t\tissue running unit # {}'.format(uid))
+                print_status(RUN['VERBOSE'], 'issue running unit # {}'.format(uid), 2)
                 save_txt(traceback.format_exc(), name,
                          folder=str(PATHS['RESULTS'] / 'units' / TASK / 'zFailed'))
 
         # Close the nwbfile
         io.close()
 
-    print('\n\nCOMPLETED UNIT ANALYSES\n\n')
+    print_status(RUN['VERBOSE'], '\n\nCOMPLETED UNIT ANALYSES\n\n', 0)
 
 if __name__ == '__main__':
     main()

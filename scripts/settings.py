@@ -3,7 +3,7 @@
 from pathlib import Path
 
 ###################################################################################################
-## FILE / RUN SETTINGS
+## RUN SETTINGS
 
 # Set which task to process
 TASK = 'THO'
@@ -11,17 +11,13 @@ TASK = 'THO'
 # Set files to ignore
 IGNORE = []
 
-## UNIT SETTINGS
+# Set verboseness
+VERBOSE = True
 
-# Set whether to skip units that have already been processed
-SKIP_ALREADY_RUN = False
-SKIP_FAILED = False
-CONTINUE_ON_FAIL = False
-
-UNITS = {
-    'SKIP_ALREADY_RUN' : SKIP_ALREADY_RUN,
-    'SKIP_FAILED' : SKIP_FAILED,
-    'CONTINUE_ON_FAIL' : CONTINUE_ON_FAIL
+RUN = {
+    'TASK' : TASK,
+    'IGNORE' : IGNORE,
+    'VERBOSE' : VERBOSE,
 }
 
 ###################################################################################################
@@ -41,6 +37,20 @@ PATHS = {
     'DATA' : DATA_PATH,
     'REPORTS' : REPORTS_PATH,
     'RESULTS' : RESULTS_PATH
+}
+
+###################################################################################################
+## UNIT SETTINGS
+
+# Set whether to skip units that have already been processed
+SKIP_ALREADY_RUN = False
+SKIP_FAILED = False
+CONTINUE_ON_FAIL = False
+
+UNITS = {
+    'SKIP_ALREADY_RUN' : SKIP_ALREADY_RUN,
+    'SKIP_FAILED' : SKIP_FAILED,
+    'CONTINUE_ON_FAIL' : CONTINUE_ON_FAIL,
 }
 
 ###################################################################################################

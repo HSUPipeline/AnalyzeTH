@@ -3,12 +3,13 @@
 import numpy as np
 
 from convnwb.io import get_files, load_nwbfile, file_in_list
+from convnwb.utils import print_status
 
 from spiketools.plts.data import plot_hist, plot_text
 from spiketools.plts.utils import make_grid, get_grid_subplot, save_figure
 
 # Import settings from local file
-from settings import TASK, PATHS, IGNORE
+from settings import RUN, PATHS
 
 # Import local code
 import sys
@@ -21,10 +22,10 @@ from reports import create_group_info, create_group_str, create_group_sessions_s
 def main():
     """Run group level summary analyses."""
 
-    print('\n\nANALYZING GROUP DATA - {} \n\n'.format(TASK))
+    print_status(RUN['VERBOSE'], '\n\nANALYZING GROUP DATA - {}\n\n'.format(RUN['TASK']), 0)
 
     # Get the list of NWB files
-    nwbfiles = get_files(PATHS['DATA'], select=TASK)
+    nwbfiles = get_files(PATHS['DATA'], select=RUN['TASK'])
 
     # Define summary data to collect
     summary = {
@@ -41,8 +42,8 @@ def main():
         ## LOADING & DATA ACCESSING
 
         # Check and ignore files set to ignore
-        if file_in_list(nwbfilename, IGNORE):
-            print('\nSkipping file (set to ignore): ', nwbfilename)
+        if file_in_list(nwbfilename, RUN['IGNORE']):
+            print_status(RUN['VERBOSE'], '\nSkipping file (set to ignore): {}'.format(nwbfilename), 0)
             continue
 
         # Load NWB file
@@ -62,7 +63,7 @@ def main():
     ## CREATE REPORT
     # Initialize figure with grid layout and add title
     grid = make_grid(3, 3, wspace=0.4, hspace=1.0, figsize=(15, 12),
-                     title='Group Report - {} - {} sessions'.format(TASK, len(summary['ids'])))
+                     title='Group Report - {} - {} sessions'.format(RUN['TASK'], len(summary['ids'])))
 
     # 00: group text
     plot_text(create_group_str(create_group_info(summary)), ax=get_grid_subplot(grid, 0, 0))
@@ -79,9 +80,9 @@ def main():
     plot_text('\n'.join(create_group_sessions_str(summary)), ax=get_grid_subplot(grid, 2, 1))
 
     # Save out report
-    save_figure('group_report_' + TASK + '.pdf', PATHS['REPORTS'] / 'group', close=True)
+    save_figure('group_report_' + RUN['TASK'] + '.pdf', PATHS['REPORTS'] / 'group', close=True)
 
-    print('\n\nCOMPLETED GROUP ANALYSES\n\n')
+    print_status(RUN['VERBOSE'], '\n\nCOMPLETED GROUP ANALYSES\n\n', 0)
 
 
 if __name__ == '__main__':

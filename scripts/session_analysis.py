@@ -14,7 +14,7 @@ from spiketools.utils.epoch import epoch_data_by_range
 from spiketools.utils.base import count_elements
 
 # Import settings from local file
-from settings import TASK, PATHS, IGNORE, BINS, OCCUPANCY
+from settings import RUN, PATHS, BINS, OCCUPANCY
 
 # Import local code
 import sys
@@ -28,21 +28,21 @@ from reports import (create_subject_info, create_subject_str, create_position_st
 def main():
     """Run session analyses."""
 
-    print('\n\nRUNNING SESSION ANALYSES - {}\n\n'.format(TASK))
+    print_status(RUN['VERBOSE'], '\n\nRUNNING SESSION ANALYSES - {}\n\n'.format(RUN['TASK']), 0)
 
-    nwbfiles = get_files(PATHS['DATA'], select=TASK)
+    nwbfiles = get_files(PATHS['DATA'], select=RUN['TASK'])
 
     for nwbfilename in nwbfiles:
 
         ## LOADING & DATA ACCESSING
 
         # Check and ignore files set to ignore
-        if file_in_list(nwbfilename, IGNORE):
-            print('\nSkipping file (set to ignore): ', nwbfilename)
+        if file_in_list(nwbfilename, RUN['IGNORE']):
+            print_status(RUN['VERBOSE'], '\nSkipping file (set to ignore): {}'.format(nwbfilename), 0)
             continue
 
         # Load file and prepare data
-        print('Running session analysis: ', nwbfilename)
+        print_status(RUN['VERBOSE'], 'Running session analysis: {}'.format(nwbfilename), 0)
 
         # Load NWB file
         nwbfile, io = load_nwbfile(nwbfilename, PATHS['DATA'], return_io=True)
@@ -104,7 +104,7 @@ def main():
 
         # Collect information to save out
         session_results = {}
-        session_results['task'] = TASK
+        session_results['task'] = RUN['TASK']
         for field in ['subject_id', 'session_id', 'session_length', 'n_units', 'n_keep']:
             session_results[field] = subject_info[field]
         for field in ['n_trials', 'n_chests', 'n_items', 'avg_error']:
@@ -112,7 +112,7 @@ def main():
 
         # Save out session results
         save_json(session_results, subject_info['session_id'],
-                  folder=str(PATHS['RESULTS'] / 'sessions' / TASK))
+                  folder=str(PATHS['RESULTS'] / 'sessions' / RUN['TASK']))
 
         ## CREATE REPORT
 
@@ -156,12 +156,12 @@ def main():
 
         # Save out report
         save_figure('session_report_' + subject_info['session_id'] + '.pdf',
-                    PATHS['REPORTS'] / 'sessions' / TASK, close=True)
+                    PATHS['REPORTS'] / 'sessions' / RUN['TASK'], close=True)
 
         # Close the nwbfile
         io.close()
 
-    print('\n\nCOMPLETED SESSION ANALYSES\n\n')
+    print_status(RUN['VERBOSE'], '\n\nCOMPLETED SESSION ANALYSES\n\n', 0)
 
 if __name__ == '__main__':
     main()
