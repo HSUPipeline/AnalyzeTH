@@ -1,7 +1,5 @@
 """Plotting functions for TH analysis."""
 
-import matplotlib.pyplot as plt
-
 from spiketools.plts.task import plot_task_structure as _plot_task_structure
 
 ###################################################################################################
@@ -20,7 +18,7 @@ def plot_task_structure(trials, ax=None, **plt_kwargs):
                           [trials.distractor_start[:], trials.distractor_stop[:]],
                           [trials.recall_start[:], trials.recall_stop[:]]],
                          [trials.start_time[:], trials.stop_time[:]],
-                         shade_colors=['green', 'orange', 'purple'],
+                         range_colors=['green', 'orange', 'purple'],
                          line_colors=['red', 'black'],
                          line_kwargs={'lw' : 1.25},
                          ax=ax, **plt_kwargs)

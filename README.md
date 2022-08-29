@@ -22,7 +22,6 @@ The full list of dependencies is listed in `requirements.txt`.
 
 This repository is set up in the following way:
 - `code/` contains custom code and utilities for doing the analyses
-- `figures/` contains saved output figures
 - `notebooks/` contains notebooks for exploring analyses
 - `scripts/` contains stand alone scripts
 

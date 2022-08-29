@@ -2,11 +2,13 @@
 
 import numpy as np
 
-from spiketools.measures import compute_spike_rate
+from spiketools.measures import compute_firing_rate
 from spiketools.utils.timestamps import convert_sec_to_min
 
 ###################################################################################################
 ###################################################################################################
+
+## GROUP REPORTS
 
 def create_group_info(summary):
     """Create a dictionary of group information."""
@@ -34,8 +36,10 @@ def create_group_str(group_info):
 def create_group_sessions_str(summary):
     """Create strings of detailed session information."""
 
+    strtemp = "{} ({:3d} trials): {:3d} keep units ({:3d} total), " \
+               "({:5.2f}% correct, avg error: {:5.2f})"
+
     out = []
-    strtemp = "{} ({:3d} trials): {:3d} keep units ({:3d} total), ({:5.2f}% correct, avg error: {:5.2f})"
     for ind in range(len(summary['ids'])):
         out.append(strtemp.format(summary['ids'][ind], summary['n_trials'][ind],
                                   summary['n_keep'][ind], summary['n_units'][ind],
@@ -43,6 +47,7 @@ def create_group_sessions_str(summary):
 
     return out
 
+## SESSION REPORTS
 
 def create_subject_info(nwbfile):
     """Create a dictionary of subject information."""
@@ -53,12 +58,12 @@ def create_subject_info(nwbfile):
     en = nwbfile.intervals['trials'][-1]['stop_time'].values[0]
 
     subject_info['n_units'] = len(nwbfile.units)
-    subject_info['n_keep'] = sum(nwbfile.units.keep[:])
+    subject_info['n_keep'] = int(sum(nwbfile.units.keep[:]))
     subject_info['subject_id'] = nwbfile.subject.subject_id
     subject_info['session_id'] = nwbfile.session_id
     subject_info['trials_start'] = st
     subject_info['trials_end'] = en
-    subject_info['length'] = float(convert_sec_to_min(en))
+    subject_info['session_length'] = float(convert_sec_to_min(en))
 
     return subject_info
 
@@ -70,7 +75,7 @@ def create_subject_str(subject_info):
         'Recording:  {:5s}'.format(subject_info['session_id']),
         'Total # units:   {:10d}'.format(subject_info['n_units']),
         'Keep # units:    {:10d}'.format(subject_info['n_keep']),
-        'Session length:     {:.2f}'.format(subject_info['length'])
+        'Session length:     {:.2f}'.format(subject_info['session_length'])
     ])
 
     return string
@@ -96,7 +101,7 @@ def create_behav_info(nwbfile):
     behav_info['n_trials'] = len(nwbfile.trials)
     behav_info['n_chests'] = int(sum(nwbfile.trials.n_chests.data[:]))
     behav_info['n_items'] = int(sum(nwbfile.trials.n_treasures.data[:]))
-    behav_info['avg_error'] = np.mean(nwbfile.trials.error.data[:])
+    behav_info['avg_error'] = float(np.mean(nwbfile.trials.error.data[:]))
 
     return behav_info
 
@@ -114,15 +119,18 @@ def create_behav_str(behav_info):
     return string
 
 
+## UNIT REPORTS
+
 def create_unit_info(unit):
     """Create a dictionary of unit information."""
 
     spikes = unit['spike_times'].values[0]
 
     unit_info = {}
+
     unit_info['wvID'] = int(unit['wvID'].values[0])
     unit_info['n_spikes'] = len(spikes)
-    unit_info['firing_rate'] = float(compute_spike_rate(spikes))
+    unit_info['firing_rate'] = float(compute_firing_rate(spikes))
     unit_info['first_spike'] = spikes[0]
     unit_info['last_spike'] = spikes[-1]
     unit_info['location'] = unit['location'].values[0]

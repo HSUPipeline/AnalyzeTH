@@ -3,16 +3,29 @@
 from pathlib import Path
 
 ###################################################################################################
-###################################################################################################
+## RUN SETTINGS
 
 # Set which task to process
 TASK = 'THO'
 
+# Set files to ignore
+IGNORE = []
+
+# Set verboseness
+VERBOSE = True
+
+RUN = {
+    'TASK' : TASK,
+    'IGNORE' : IGNORE,
+    'VERBOSE' : VERBOSE,
+}
+
+###################################################################################################
 ## PATHS
 
 # Set the data path to load from
-#BASE_PATH = Path('/Users/tom/Documents/Data/JacobsLab/TH/')
-BASE_PATH = Path('/scratch/tom.donoghue/TH/')
+BASE_PATH = Path('/Users/tom/Documents/Data/JacobsLab/TH/')
+#BASE_PATH = Path('/scratch/tom.donoghue/TH/')
 DATA_PATH = BASE_PATH / 'NWB'
 
 # Set the path to save out reports & results
@@ -23,66 +36,84 @@ PATHS = {
     'BASE' : BASE_PATH,
     'DATA' : DATA_PATH,
     'REPORTS' : REPORTS_PATH,
-    'RESULTS' : RESULTS_PATH
+    'RESULTS' : RESULTS_PATH,
 }
 
-## FILE SETTINGS
-
-# Set files to ignore
-IGNORE = []
-
+###################################################################################################
 ## UNIT SETTINGS
 
 # Set whether to skip units that have already been processed
 SKIP_ALREADY_RUN = False
 SKIP_FAILED = False
-CONTINUE_ON_FAIL = True
+CONTINUE_ON_FAIL = False
 
-UNIT_SETTINGS = {
+UNITS = {
     'SKIP_ALREADY_RUN' : SKIP_ALREADY_RUN,
     'SKIP_FAILED' : SKIP_FAILED,
-    'CONTINUE_ON_FAIL' : CONTINUE_ON_FAIL
+    'CONTINUE_ON_FAIL' : CONTINUE_ON_FAIL,
 }
 
+###################################################################################################
 ## METHOD SETTINGS
-PLACE_METHOD = 'ANOVA'  # 'INFO', 'ANOVA'
-TARGET_METHOD = 'ANOVA'  # 'INFO', 'ANOVA'
 
-# Collect together method settings
-METHOD_SETTINGS = {
-    'PLACE' : PLACE_METHOD,
-    'TARGET' : TARGET_METHOD
+# Define which method(s) to run (all within list will be run)
+PLACE_METHODS = ['ANOVA', 'INFO']    # 'info', 'anova'
+TARGET_METHODS = ['ANOVA', 'INFO']   # 'info', 'anova'
+SERIAL_METHODS = ['ANOVA']           # 'anova'
+
+METHODS = {
+    'PLACE' : PLACE_METHODS,
+    'TARGET' : TARGET_METHODS,
+    'SERIAL' : SERIAL_METHODS,
 }
 
+###################################################################################################
 ## ANALYSIS SETTINGS
 
-# Set the time range to analyze
-TRIAL_RANGE = [-1, 1]
+## BIN SETTINGS
 
-# Set the spatial bin definitions
 #PLACE_BINS = [7, 21]
 PLACE_BINS = [9, 12]
 #CHEST_BINS = [5, 7]
 CHEST_BINS = [6, 8]
 
-# Occupancy settings
-MIN_OCCUPANCY = 1
+BINS = {
+    'place' : PLACE_BINS,
+    'chest' : CHEST_BINS,
+}
 
-# Collect together all analysis settings
-ANALYSIS_SETTINGS = {
-    'TRIAL_RANGE' : TRIAL_RANGE,
-    'PLACE_BINS' : PLACE_BINS,
-    'CHEST_BINS' : CHEST_BINS,
-    'MIN_OCCUPANCY' : MIN_OCCUPANCY
+## OCCUPANCY SETTINGS
+
+OCC_MINIMUM = 1
+OCC_SETNAN = True
+OCC_SPEED_THRESH = 5e-6
+OCC_TIME_THRESH = 0.25
+
+OCCUPANCY = {
+    'minimum' : OCC_MINIMUM,
+    'set_nan' : OCC_SETNAN,
+    'speed_threshold' : OCC_SPEED_THRESH,
+    'time_threshold' : OCC_TIME_THRESH,
+}
+
+## TIME WINDOW SETTINGS
+
+TRIAL_RANGE = [-1, 1]
+PRE_WINDOW = [-1, 0]
+POST_WINDOW = [0, 1]
+
+WINDOWS = {
+    'trial_range' : TRIAL_RANGE,
+    'pre' : PRE_WINDOW,
+    'post' : POST_WINDOW,
 }
 
 ## SURROGATE SETTINGS
 
-# Settings for surrogate analyses
-N_SURROGATES = 500
 SHUFFLE_APPROACH = 'CIRCULAR'   # 'CIRCULAR', 'BINCIRC'
+N_SHUFFLES = 25
 
-SURROGATE_SETTINGS = {
-    'N_SURROGATES' : N_SURROGATES,
-    'SHUFFLE_APPROACH' : SHUFFLE_APPROACH
+SURROGATES = {
+    'approach' : SHUFFLE_APPROACH,
+    'n_shuffles' : N_SHUFFLES,
 }

@@ -1,17 +1,15 @@
 """Run & collect TH analyses at the group level."""
 
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import gridspec
 
-from pynwb import NWBHDF5IO
-
-from convnwb.io import get_files
+from convnwb.io import get_files, load_nwbfile, file_in_list
+from convnwb.utils import print_status
 
 from spiketools.plts.data import plot_hist, plot_text
+from spiketools.plts.utils import make_grid, get_grid_subplot, save_figure
 
 # Import settings from local file
-from settings import TASK, PATHS, IGNORE
+from settings import RUN, PATHS
 
 # Import local code
 import sys
@@ -24,10 +22,10 @@ from reports import create_group_info, create_group_str, create_group_sessions_s
 def main():
     """Run group level summary analyses."""
 
-    print('\n\nANALYZING GROUP DATA - {} \n\n'.format(TASK))
+    print_status(RUN['VERBOSE'], '\n\nANALYZING GROUP DATA - {}\n\n'.format(RUN['TASK']), 0)
 
     # Get the list of NWB files
-    nwbfiles = get_files(PATHS['DATA'], select=TASK)
+    nwbfiles = get_files(PATHS['DATA'], select=RUN['TASK'])
 
     # Define summary data to collect
     summary = {
@@ -39,65 +37,52 @@ def main():
         'correct' : []
     }
 
-    for nwbfile in nwbfiles:
+    for nwbfilename in nwbfiles:
 
         ## LOADING & DATA ACCESSING
+
         # Check and ignore files set to ignore
-        if nwbfile.split('.')[0] in IGNORE:
-            print('Ignoring file: ', nwbfile)
+        if file_in_list(nwbfilename, RUN['IGNORE']):
+            print_status(RUN['VERBOSE'], '\nSkipping file (set to ignore): {}'.format(nwbfilename), 0)
             continue
 
         # Load NWB file
-        io = NWBHDF5IO(str(PATHS['DATA'] / nwbfile), 'r')
-        nwbfile = io.read()
-
-        # Get the subject & session ID from file
-        subj_id = nwbfile.subject.subject_id
-        session_id = nwbfile.session_id
+        nwbfile, io = load_nwbfile(nwbfilename, PATHS['DATA'], return_io=True)
 
         # Collect summary information
-        summary['ids'].append(session_id)
+        summary['ids'].append(nwbfile.session_id)
         summary['n_trials'].append(len(nwbfile.trials))
         summary['n_units'].append(len(nwbfile.units))
         summary['n_keep'].append(sum(nwbfile.units.keep[:]))
         summary['error'].append(np.median(nwbfile.trials.error[:]))
         summary['correct'].append(np.mean(nwbfile.trials.correct[:]))
 
-    # Collect information of interest
-    group_info = create_group_info(summary)
+        # Close the nwbfile
+        io.close()
 
     ## CREATE REPORT
-    # Initialize figure
-    _ = plt.figure(figsize=(15, 12))
-    grid = gridspec.GridSpec(3, 3, wspace=0.4, hspace=1.0)
-    plt.suptitle('Group Report - {} - {} sessions'.format(TASK, len(summary['ids'])),
-                 fontsize=24, y=0.95);
+    # Initialize figure with grid layout and add title
+    grid = make_grid(3, 3, wspace=0.4, hspace=1.0, figsize=(15, 12),
+                     title='Group Report - {} - {} sessions'.format(RUN['TASK'], len(summary['ids'])))
 
     # 00: group text
-    ax00 = plt.subplot(grid[0, 0])
-    plot_text(create_group_str(group_info), ax=ax00)
+    plot_text(create_group_str(create_group_info(summary)), ax=get_grid_subplot(grid, 0, 0))
 
     # 01: neuron firing
-    ax01 = plt.subplot(grid[0, 1])
-    plot_hist(summary['n_units'], title='Number of Units', ax=ax01)
+    plot_hist(summary['n_keep'], title='Number of Units', ax=get_grid_subplot(grid, 0, 1))
 
     # 10-12: behavioural data
-    ax10 = plt.subplot(grid[1, 0])
-    plot_hist(summary['n_trials'], title='Number of trials', ax=ax10)
-    ax11 = plt.subplot(grid[1, 1])
-    plot_hist(summary['correct'] * 100, title='Percent Correct', ax=ax11)
-    ax12 = plt.subplot(grid[1, 2])
-    plot_hist(summary['error'], title='Average Error', ax=ax12)
+    plot_hist(summary['n_trials'], title='Number of trials', ax=get_grid_subplot(grid, 1, 0))
+    plot_hist(summary['correct'] * 100, title='Percent Correct', ax=get_grid_subplot(grid, 1, 1))
+    plot_hist(summary['error'], title='Average Error', ax=get_grid_subplot(grid, 1, 2))
 
     # 21: detailed session strings
-    ax21 = plt.subplot(grid[2, 1])
-    plot_text('\n'.join(create_group_sessions_str(summary)), ax=ax21)
+    plot_text('\n'.join(create_group_sessions_str(summary)), ax=get_grid_subplot(grid, 2, 1))
 
     # Save out report
-    report_name = 'group_report_' + TASK + '.pdf'
-    plt.savefig(PATHS['REPORTS'] / 'group' / report_name)
+    save_figure('group_report_' + RUN['TASK'] + '.pdf', PATHS['REPORTS'] / 'group', close=True)
 
-    print('\n\nCOMPLETED GROUP ANALYSES\n\n')
+    print_status(RUN['VERBOSE'], '\n\nCOMPLETED GROUP ANALYSES\n\n', 0)
 
 
 if __name__ == '__main__':
