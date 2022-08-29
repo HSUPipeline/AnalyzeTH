@@ -16,7 +16,7 @@ from spiketools.stats.shuffle import shuffle_spikes
 from spiketools.stats.trials import compare_pre_post_activity
 from spiketools.plts.spikes import plot_isis
 from spiketools.plts.spatial import plot_positions, plot_heatmap, create_heat_title
-from spiketools.plts.trials import plot_rasters, create_trial_title
+from spiketools.plts.trials import plot_rasters, create_raster_title
 from spiketools.plts.data import plot_bar, plot_polar_hist, plot_text
 from spiketools.plts.stats import plot_surrogates
 from spiketools.plts.annotate import color_pval
@@ -319,7 +319,7 @@ def main():
 
                 # 10: chest related firing
                 plot_rasters(all_chests, xlim=WINDOWS['trial_range'], vline=0,
-                             title=create_trial_title('All Chests', fr_pre_all, fr_post_all,
+                             title=create_raster_title('All Chests', fr_pre_all, fr_post_all,
                                  results['fr_t_val_all'], results['fr_p_val_all']),
                              title_color=color_pval(results['fr_p_val_all']),
                              ax=get_grid_subplot(grid, slice(1, 3), slice(0, 2)))
@@ -327,12 +327,12 @@ def main():
 
                 # 12&22: Compare Empty & Full chest trials
                 plot_rasters(empty_trials, xlim=WINDOWS['trial_range'], vline=0,
-                             title=create_trial_title('Empty', fr_pre_empt, fr_post_empt,
+                             title=create_raster_title('Empty', fr_pre_empt, fr_post_empt,
                                  results['fr_t_val_empt'], results['fr_p_val_empt']),
                              title_color=color_pval(results['fr_p_val_empt']), title_fontsize=14,
                              ax=get_grid_subplot(grid, 1, 2))
                 plot_rasters(full_trials, xlim=WINDOWS['trial_range'], vline=0,
-                             title=create_trial_title('Full', fr_pre_full, fr_post_full,
+                             title=create_raster_title('Full', fr_pre_full, fr_post_full,
                                 results['fr_t_val_full'], results['fr_p_val_full']),
                              title_color=color_pval(results['fr_p_val_full']), title_fontsize=14,
                              ax=get_grid_subplot(grid, 2, 2))

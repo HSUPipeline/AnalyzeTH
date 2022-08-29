@@ -15,7 +15,7 @@ PLACE = {
     'COLUMNS' : ['bin', 'fr']
 }
 
-create_df_place = partial(create_dataframe_bins, columns=PLACE['COLUMNS'])
+create_df_place = partial(create_dataframe_bins)
 fit_anova_place = partial(fit_anova, formula=PLACE['MODEL'], feature=PLACE['FEATURE'])
 
 ## SPATIAL TARGET MODELS
@@ -37,6 +37,6 @@ SERIAL_POSITION = {
     'COLUMNS' : ['segment', 'fr']
 }
 
-create_df_serial = partial(create_dataframe_bins, columns=SERIAL_POSITION['COLUMNS'])
+create_df_serial = partial(create_dataframe_bins, bin_columns=SERIAL_POSITION['COLUMNS'])
 fit_anova_serial = partial(fit_anova, formula=SERIAL_POSITION['MODEL'],
                            feature=SERIAL_POSITION['FEATURE'])
