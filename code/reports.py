@@ -15,7 +15,7 @@ def create_group_info(summary):
 
     group_info = {}
 
-    group_info['n_subjs'] = len(set([el.split('-')[0] for el in summary['ids']]))
+    group_info['n_subjs'] = len(set([el.split('_')[1] for el in summary['ids']]))
     group_info['n_sessions'] = len(summary['ids'])
 
     return group_info
@@ -36,14 +36,17 @@ def create_group_str(group_info):
 def create_group_sessions_str(summary):
     """Create strings of detailed session information."""
 
-    strtemp = "{} ({:3d} trials): {:3d} keep units ({:3d} total), " \
-               "({:5.2f}% correct, avg error: {:5.2f})"
+    strtemp = "{}: {:2d} trials ({:5.2f}% correct, {:5.2f} avg error), " \
+                  "with {:3d}/{:3d} units (keep/total)"
 
     out = []
     for ind in range(len(summary['ids'])):
-        out.append(strtemp.format(summary['ids'][ind], summary['n_trials'][ind],
-                                  summary['n_keep'][ind], summary['n_units'][ind],
-                                  summary['correct'][ind], summary['error'][ind]))
+        out.append(strtemp.format(summary['ids'][ind],
+                                  summary['n_trials'][ind],
+                                  summary['correct'][ind],
+                                  summary['error'][ind],
+                                  summary['n_keep'][ind],
+                                  summary['n_units'][ind]))
 
     return out
 
