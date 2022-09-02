@@ -7,8 +7,9 @@ from scipy.stats import sem
 
 #from pingouin import convert_angles, circ_rayleigh
 
-from convnwb.io import load_nwbfile, get_files, save_json, save_txt, file_in_list
-from convnwb.utils import print_status
+from convnwb.io import load_nwbfile, get_files, save_json, save_txt
+from convnwb.io.utils import file_in_list
+from convnwb.utils.log import print_status
 
 from spiketools.measures import compute_isis
 from spiketools.measures.trials import compute_segment_frs

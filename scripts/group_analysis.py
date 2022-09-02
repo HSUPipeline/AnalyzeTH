@@ -2,8 +2,9 @@
 
 import numpy as np
 
-from convnwb.io import get_files, load_nwbfile, file_in_list
-from convnwb.utils import print_status
+from convnwb.io import get_files, load_nwbfile
+from convnwb.io.utils import file_in_list
+from convnwb.utils.log import print_status
 
 from spiketools.plts.data import plot_hist, plot_text
 from spiketools.plts.utils import make_grid, get_grid_subplot, save_figure
@@ -54,7 +55,7 @@ def main():
         summary['n_trials'].append(len(nwbfile.trials))
         summary['n_units'].append(len(nwbfile.units))
         summary['n_keep'].append(sum(nwbfile.units.keep[:]))
-        summary['error'].append(np.median(nwbfile.trials.error[:]))
+        summary['error'].append(np.mean(nwbfile.trials.error[:]))
         summary['correct'].append(np.mean(nwbfile.trials.correct[:]))
 
         # Close the nwbfile

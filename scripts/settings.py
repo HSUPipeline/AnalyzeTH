@@ -24,7 +24,7 @@ RUN = {
 ## PATHS
 
 # Set the data path to load from
-BASE_PATH = Path('/Users/tom/Documents/Data/JacobsLab/TH/')
+BASE_PATH = Path('/Users/tom/Data/JacobsLab/WVTH/')
 #BASE_PATH = Path('/scratch/tom.donoghue/TH/')
 DATA_PATH = BASE_PATH / 'NWB'
 

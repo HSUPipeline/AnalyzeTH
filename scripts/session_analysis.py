@@ -2,8 +2,9 @@
 
 import numpy as np
 
-from convnwb.io import get_files, save_json, load_nwbfile, file_in_list
-from convnwb.utils import print_status
+from convnwb.io import get_files, save_json, load_nwbfile
+from convnwb.io.utils import file_in_list
+from convnwb.utils.log import print_status
 
 from spiketools.measures import compute_firing_rate
 from spiketools.spatial.occupancy import compute_occupancy
@@ -65,7 +66,7 @@ def main():
         speed = nwbfile.processing['position_measures']['speed'].data[:]
 
         # Get head directions
-        hd_degrees = nwbfile.acquisition['heading']['direction'].data[:]
+        hd_degrees = nwbfile.acquisition['head_direction']['head_direction'].data[:]
 
         # Get chest positions
         chest_positions = nwbfile.acquisition['stimuli']['chest_positions'].data[:].T
@@ -82,8 +83,15 @@ def main():
 
         # Get unit information
         n_units = len(nwbfile.units)
-        keep_inds = np.where(nwbfile.units.keep[:])[0]
-        n_keep = len(keep_inds)
+        n_keep = sum(nwbfile.units.keep[:])
+
+        # Get units dataframe & select only the keep units
+        units_df = nwbfile.units.to_dataframe()
+        units_df = units_df[units_df.keep == True]
+
+        # Count the number of wires with units, and numbers of units per region
+        n_unit_channels = len(set(units_df.channel))
+        location_counts = count_elements(units_df.location)
 
         ## PRECOMPUTE MEASURES OF INTEREST
 
@@ -93,7 +101,7 @@ def main():
 
         # Calculate unit-wise firing rates, and spatial occupancy
         frs = [compute_firing_rate(nwbfile.units.get_unit_spike_times(uind)) \
-            for uind in keep_inds]
+            for uind in np.where(nwbfile.units.keep[:])[0]]
         occ = compute_occupancy(positions, ptimes, BINS['place'], area_range,
                                 speed=speed, **OCCUPANCY)
 
@@ -105,11 +113,15 @@ def main():
 
         # Collect information to save out
         session_results = {}
-        session_results['task'] = RUN['TASK']
-        for field in ['subject_id', 'session_id', 'session_length', 'n_units', 'n_keep']:
-            session_results[field] = subject_info[field]
-        for field in ['n_trials', 'n_chests', 'n_items', 'avg_error']:
-            session_results[field] = behav_info[field]
+        #session_results['task'] = RUN['TASK']
+        #for field in ['subject_id', 'session_id', 'session_length', 'n_units', 'n_keep']:
+        #    session_results[field] = subject_info[field]
+        #for field in ['n_trials', 'n_chests', 'n_items', 'avg_error']:
+        #    session_results[field] = behav_info[field]
+
+        # ADD UNIT INFO (TEMP)
+        session_results['n_unit_channels'] = n_unit_channels
+        session_results.update(location_counts)
 
         # Save out session results
         save_json(session_results, subject_info['session_id'],
