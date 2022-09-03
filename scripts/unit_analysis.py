@@ -28,8 +28,7 @@ from spiketools.spatial.target import compute_target_bins
 from spiketools.spatial.information import compute_spatial_information
 from spiketools.spatial.utils import convert_2dindices
 from spiketools.utils.extract import get_values_by_times
-from spiketools.utils.epoch import (epoch_spikes_by_event, epoch_spikes_by_range,
-                                    epoch_data_by_range)
+from spiketools.utils.epoch import epoch_spikes_by_event, epoch_spikes_by_range
 from spiketools.utils.base import select_from_list
 from spiketools.utils.run import create_methods_list
 
@@ -39,6 +38,7 @@ from settings import RUN, PATHS, UNITS, METHODS, BINS, OCCUPANCY, WINDOWS, SURRO
 # Import local code
 import sys
 sys.path.append('../code')
+from utils import select_navigation, stack_trials
 from models import (create_df_place, fit_anova_place,
                     create_df_target, fit_anova_target,
                     create_df_serial, fit_anova_serial)
@@ -94,30 +94,21 @@ def main():
         full_mask = nwbfile.trials.full_chest.data[:]
         empty_mask = np.invert(full_mask)
 
+        # Define the segment times of interest
+        seg_times = np.insert(np.array(chest_openings), 0, nav_starts, axis=1)
+
         # Get area ranges, adding a buffer to the z-range (for tower transport)
         area_range = [nwbfile.acquisition['boundaries']['x_range'].data[:],
                       nwbfile.acquisition['boundaries']['z_range'].data[:] + np.array([-15, 15])]
 
-        # Get the position data & speed data
-        ptimes = nwbfile.acquisition['position']['player_position'].timestamps[:]
-        positions = nwbfile.acquisition['position']['player_position'].data[:].T
-        stimes = nwbfile.processing['position_measures']['speed'].timestamps[:]
-        speed = nwbfile.processing['position_measures']['speed'].data[:]
+        # Get position data, selecting from navigation periods, and recombine across trials
+        ptimes_trials, positions_trials = select_navigation(\
+            nwbfile.acquisition['position']['player_position'], nav_starts, nav_stops)
+        ptimes, positions = stack_trials(ptimes_trials, positions_trials)
 
-        # Get position data for navigation segments
-        ptimes_trials, positions_trials = epoch_data_by_range(\
-            ptimes, positions, nav_starts, nav_stops)
-        stimes_trials, speed_trials = epoch_data_by_range(\
-            stimes, speed, nav_starts, nav_stops)
-
-        # Recombine position data across selected navigation trials
-        ptimes = np.hstack(ptimes_trials)
-        positions = np.hstack(positions_trials)
-        stimes = np.hstack(stimes_trials)
-        speed = np.hstack(speed_trials)
-
-        # Define the segment times of interest
-        seg_times = np.insert(np.array(chest_openings), 0, nav_starts, axis=1)
+        # Get speed data, selecting from navigation periods, and recombining across trials
+        stimes, speed = stack_trials(*select_navigation(\
+            nwbfile.processing['position_measures']['speed'], nav_starts, nav_stops))
 
         # Get the chest positions
         chest_xs, chest_ys = nwbfile.acquisition['stimuli']['chest_positions'].data[:].T
@@ -323,7 +314,8 @@ def main():
                              ax=get_grid_subplot(grid, 2, 2))
 
                 # ax30: positional firing
-                plot_positions(positions, spike_positions, x_bins=x_bin_edges, y_bins=y_bin_edges,
+                plot_positions(positions_trials, spike_positions,
+                               x_bins=x_bin_edges, y_bins=y_bin_edges,
                                title='Firing Across Positions',
                                ax=get_grid_subplot(grid, slice(3, 5), 0))
 
