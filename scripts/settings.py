@@ -6,7 +6,7 @@ from pathlib import Path
 ## RUN SETTINGS
 
 # Set which task to process
-TASK = 'THO'
+TASK = 'THF'
 
 # Set files to ignore
 IGNORE = []
