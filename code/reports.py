@@ -3,6 +3,7 @@
 import numpy as np
 
 from spiketools.measures import compute_firing_rate
+from spiketools.utils.base import count_elements
 from spiketools.utils.timestamps import convert_sec_to_min
 
 ###################################################################################################
@@ -15,7 +16,7 @@ def create_group_info(summary):
 
     group_info = {}
 
-    group_info['n_subjs'] = len(set([el.split('-')[0] for el in summary['ids']]))
+    group_info['n_subjs'] = len(set([el.split('_')[1] for el in summary['ids']]))
     group_info['n_sessions'] = len(summary['ids'])
 
     return group_info
@@ -36,72 +37,96 @@ def create_group_str(group_info):
 def create_group_sessions_str(summary):
     """Create strings of detailed session information."""
 
-    strtemp = "{} ({:3d} trials): {:3d} keep units ({:3d} total), " \
-               "({:5.2f}% correct, avg error: {:5.2f})"
+    strtemp = "{}: {:2d} trials ({:5.2f}% correct, {:5.2f} avg error), " \
+                  "with {:3d}/{:3d} units (keep/total)"
 
     out = []
     for ind in range(len(summary['ids'])):
-        out.append(strtemp.format(summary['ids'][ind], summary['n_trials'][ind],
-                                  summary['n_keep'][ind], summary['n_units'][ind],
-                                  summary['correct'][ind], summary['error'][ind]))
+        out.append(strtemp.format(summary['ids'][ind],
+                                  summary['n_trials'][ind],
+                                  summary['correct'][ind],
+                                  summary['error'][ind],
+                                  summary['n_keep'][ind],
+                                  summary['n_units'][ind]))
 
     return out
 
 ## SESSION REPORTS
 
-def create_subject_info(nwbfile):
-    """Create a dictionary of subject information."""
+def create_units_info(units):
+    """Create a dictionary of units related information."""
 
-    subject_info = {}
+    units_info = {}
 
-    st = nwbfile.intervals['trials'][0]['start_time'].values[0]
-    en = nwbfile.intervals['trials'][-1]['stop_time'].values[0]
+    # Get units dataframe & select only the keep units
+    units_df = units.to_dataframe()
+    units_df = units_df[units_df.keep == True]
 
-    subject_info['n_units'] = len(nwbfile.units)
-    subject_info['n_keep'] = int(sum(nwbfile.units.keep[:]))
-    subject_info['subject_id'] = nwbfile.subject.subject_id
-    subject_info['session_id'] = nwbfile.session_id
-    subject_info['trials_start'] = st
-    subject_info['trials_end'] = en
-    subject_info['session_length'] = float(convert_sec_to_min(en))
+    units_info['n_units'] = len(units)
+    units_info['n_keep'] = int(sum(units.keep[:]))
+    units_info['n_unit_channels'] = len(set(units_df.channel))
+    units_info['location_counts'] = count_elements(units_df.location)
+    units_info['frs'] = [compute_firing_rate(spikes) for spikes in units_df.spike_times]
 
-    return subject_info
+    return units_info
 
 
-def create_subject_str(subject_info):
+def create_units_str(subject_info):
     """Create a string representation of the subject / session information."""
 
     string = '\n'.join([
-        'Recording:  {:5s}'.format(subject_info['session_id']),
+        'UNITS INFO',
         'Total # units:   {:10d}'.format(subject_info['n_units']),
-        'Keep # units:    {:10d}'.format(subject_info['n_keep']),
-        'Session length:     {:.2f}'.format(subject_info['session_length'])
+        'Keep # units:    {:9d}'.format(subject_info['n_keep']),
+        '# unit channels: {:5d}'.format(subject_info['n_unit_channels']),
     ])
 
     return string
 
 
-def create_position_str(bins, occ):
+def create_position_info(acquisition, bins):
+    """Create a dictionary of position related information."""
+
+    position_info = {}
+
+    position_info['bins'] = bins
+    position_info['area_range'] = \
+        [acquisition['boundaries']['x_range'].data[:],
+         acquisition['boundaries']['z_range'].data[:] + np.array([-10, 10])]
+    position_info['chests'] = acquisition['stimuli']['chest_positions'].data[:].T
+
+    return position_info
+
+
+def create_position_str(position_info):
     """Create a string representation of position information."""
 
     string = '\n'.join([
-        'Position bins: {:2d}, {:2d}'.format(*bins),
-        'Median occupancy: {:2.4f}'.format(np.nanmedian(occ)),
-        'Min / Max occupancy:  {:2.4f}, {:2.4f}'.format(np.nanmin(occ), np.nanmax(occ))
+        'POSITION INFO',
+        'Position bins: {:2d}, {:2d}'.format(*position_info['bins']),
+        'Median occupancy: {:2.4f}'.format(np.nanmedian(position_info['occupancy'])),
+        'Min occupancy:  {:2.4f}'.format(np.nanmin(position_info['occupancy'])),
+        'Max occupancy:  {:2.4f}'.format(np.nanmax(position_info['occupancy'])),
     ])
 
     return string
 
 
-def create_behav_info(nwbfile):
+def create_behav_info(trials):
     """Create a dictionary of session behaviour information."""
 
     behav_info = {}
 
-    behav_info['n_trials'] = len(nwbfile.trials)
-    behav_info['n_chests'] = int(sum(nwbfile.trials.n_chests.data[:]))
-    behav_info['n_items'] = int(sum(nwbfile.trials.n_treasures.data[:]))
-    behav_info['avg_error'] = float(np.mean(nwbfile.trials.error.data[:]))
+    behav_info['trials_start'] = trials.start_time[0]
+    behav_info['trials_end'] = trials.stop_time[-1]
+    behav_info['session_length'] = float(convert_sec_to_min(behav_info['trials_end']))
+    behav_info['n_trials'] = len(trials)
+    behav_info['n_chests'] = int(sum(trials.n_chests.data[:]))
+    behav_info['n_items'] = int(sum(trials.n_treasures.data[:]))
+    behav_info['%_correct'] = float(np.mean(trials.correct[:]) * 100)
+    behav_info['avg_error'] = float(np.mean(trials.error.data[:]))
+    behav_info['confidence_counts'] = \
+        count_elements(trials.confidence_response.data[:], labels=['yes', 'maybe', 'no'])
 
     return behav_info
 
@@ -110,9 +135,12 @@ def create_behav_str(behav_info):
     """Create a string representation of behavioural performance."""
 
     string = '\n'.join([
+        'BEHAVIOR INFO',
         'Number of trials: {}'.format(str(behav_info['n_trials'])),
+        'Session length: {:.2f}'.format(behav_info['session_length']),
         'Number of chests: {}'.format(str(behav_info['n_chests'])),
         'Number of items: {}'.format(str(behav_info['n_items'])),
+        'Correct recall : {:5.2f}%'.format(behav_info['%_correct']),
         'Retrieval error : {:4.2f}'.format(behav_info['avg_error']),
     ])
 
@@ -151,7 +179,7 @@ def create_unit_str(unit_info):
         '# spikes:   {:5d}'.format(unit_info['n_spikes']),
         'firing rate:  {:5.4f}'.format(unit_info['firing_rate']),
         'Location:   {} ({})'.format(unit_info['location'],
-                                   unit_info['channel']),
+                                     unit_info['channel']),
         'Cluster:   {}'.format(unit_info['cluster'])
     ])
 
