@@ -7,10 +7,11 @@ from convnwb.io.utils import file_in_list
 from convnwb.utils.log import print_status
 
 from spiketools.spatial.occupancy import compute_occupancy
-from spiketools.plts.data import plot_bar, plot_hist, plot_text
+from spiketools.plts.data import plot_bar, plot_hist, plot_text, plot_barh
 from spiketools.plts.spatial import plot_heatmap, plot_positions
 from spiketools.plts.spikes import plot_firing_rates
 from spiketools.plts.utils import make_grid, get_grid_subplot, save_figure
+from spiketools.plts.annotate import _add_vlines
 
 # Import settings from local file
 from settings import RUN, PATHS, BINS, OCCUPANCY
@@ -22,6 +23,10 @@ from utils import select_navigation, stack_trials
 from reports import (create_units_info, create_units_str,
                      create_position_info, create_position_str,
                      create_behav_info, create_behav_str)
+
+# Set plot context
+import seaborn as sns
+sns.set_context('talk')
 
 ###################################################################################################
 ###################################################################################################
@@ -91,42 +96,54 @@ def main():
 
         ## CREATE REPORT
 
-        # Initialize figure
-        grid = make_grid(4, 3, wspace=0.4, hspace=1.0, figsize=(15, 15),
+        # Initialize figure with grid layout
+        grid = make_grid(4, 5, wspace=0.5, hspace=0.5, figsize=(15, 15),
+                         width_ratios=[1, 0.7, 0.7, 0.7, 0.7],
                          title='TH Subject Report - {}'.format(nwbfile.session_id))
 
         # 00: units text
         plot_text(create_units_str(units_info), ax=get_grid_subplot(grid, 0, 0))
 
-        # 01: neuron fig
-        plot_firing_rates(units_info['frs'], xticks=[], ax=get_grid_subplot(grid, 0, slice(1, None)))
+        # 01: unit firing rates
+        plot_firing_rates(units_info['frs'], xticks=[],
+                          ax=get_grid_subplot(grid, 0, slice(1, 4)))
 
-        # 10: unit locations plot
-        plot_bar(units_info['location_counts'].values(), units_info['location_counts'].keys(),
-                 title='Unit Locations', ax=get_grid_subplot(grid, 1, 0))
+        # 02: unit locations
+        plot_barh(units_info['location_counts'].values(),
+                  list(units_info['location_counts'].keys()),
+                  title='Unit Locations', add_text=True, ax=get_grid_subplot(grid, 0, 4))
 
-        # 11: occupancy map
-        plot_heatmap(pos_info['occupancy'], title='Occupancy',
-                     ax=get_grid_subplot(grid, slice(1, 3), 1))
+        # 10: position text
+        plot_text(create_position_str(pos_info), ax=get_grid_subplot(grid, 1, 0))
 
-        # 12: subject positions overlaid with chest positions
+        # 11: subject positions overlaid with chest positions
         plot_positions(positions_trials,
                        landmarks={'positions' : pos_info['chests'], 'color' : 'green'},
-                       ax=get_grid_subplot(grid, slice(1, 3), 2))
+                       title='Navigation Positions & Chests',
+                       ax=get_grid_subplot(grid, slice(1, 3), slice(1, 3)))
 
-        # 20: position text
-        plot_text(create_position_str(pos_info), ax=get_grid_subplot(grid, 2, 0))
+        # 12: occupancy map
+        plot_heatmap(pos_info['occupancy'], title='Occupancy',
+                     ax=get_grid_subplot(grid, slice(1, 3), slice(3, 5)))
+
+        # 20: plot the player's speed distribution
+        plot_hist(speed, bins=25, title='Speeds', yticks=[],
+                  ax=get_grid_subplot(grid, 2, 0))
+        _add_vlines(OCCUPANCY['speed_threshold'], color='red',
+                    ax=get_grid_subplot(grid, 2, 0))
 
         # 30: behaviour text
         plot_text(create_behav_str(behav_info), ax=get_grid_subplot(grid, 3, 0))
 
         # 31: choice point plot
-        plot_bar(behav_info['confidence_counts'].values(), behav_info['confidence_counts'].keys(),
-                 title='Confidence Reports', ax=get_grid_subplot(grid, 3, 1))
+        plot_bar(behav_info['confidence_counts'].values(),
+                 behav_info['confidence_counts'].keys(),
+                 title='Confidence Reports',
+                 ax=get_grid_subplot(grid, 3, slice(1, 3)))
 
         # 32: errors plot
         plot_hist(nwbfile.trials.error.data[:], title='Response Error',
-                  ax=get_grid_subplot(grid, 3, 2))
+                  ax=get_grid_subplot(grid, 3, slice(3, 5)))
 
         # Save out report
         save_figure('session_report_' + nwbfile.session_id + '.pdf',

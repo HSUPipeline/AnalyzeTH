@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from spiketools.measures import compute_firing_rate
+from spiketools.measures.spikes import compute_firing_rate
 from spiketools.utils.base import count_elements
 from spiketools.utils.timestamps import convert_sec_to_min
 
@@ -75,10 +75,10 @@ def create_units_str(subject_info):
     """Create a string representation of the subject / session information."""
 
     string = '\n'.join([
-        'UNITS INFO',
-        'Total # units:   {:10d}'.format(subject_info['n_units']),
-        'Keep # units:    {:9d}'.format(subject_info['n_keep']),
-        '# unit channels: {:5d}'.format(subject_info['n_unit_channels']),
+        'UNITS INFO\n',
+        '# total units:  {:4d}'.format(subject_info['n_units']),
+        '# keep units:   {:4d}'.format(subject_info['n_keep']),
+        '# chan w units: {:4d}'.format(subject_info['n_unit_channels']),
     ])
 
     return string
@@ -102,7 +102,7 @@ def create_position_str(position_info):
     """Create a string representation of position information."""
 
     string = '\n'.join([
-        'POSITION INFO',
+        'POSITION INFO\n',
         'Position bins: {:2d}, {:2d}'.format(*position_info['bins']),
         'Median occupancy: {:2.4f}'.format(np.nanmedian(position_info['occupancy'])),
         'Min occupancy:  {:2.4f}'.format(np.nanmin(position_info['occupancy'])),
@@ -135,7 +135,7 @@ def create_behav_str(behav_info):
     """Create a string representation of behavioural performance."""
 
     string = '\n'.join([
-        'BEHAVIOR INFO',
+        'BEHAVIOR INFO\n',
         'Number of trials: {}'.format(str(behav_info['n_trials'])),
         'Session length: {:.2f}'.format(behav_info['session_length']),
         'Number of chests: {}'.format(str(behav_info['n_chests'])),
