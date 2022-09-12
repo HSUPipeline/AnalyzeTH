@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from spiketools.measures.spikes import compute_firing_rate
+from spiketools.measures import compute_firing_rate
 from spiketools.utils.base import count_elements
 from spiketools.utils.timestamps import convert_sec_to_min
 
