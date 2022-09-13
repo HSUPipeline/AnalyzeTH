@@ -6,6 +6,7 @@ import numpy as np
 from convnwb.io import load_nwbfile
 from spiketools.utils.epoch import epoch_data_by_range
 from spiketools.utils.base import count_elements
+from spiketools.utils.extract import get_range, get_values_by_time_range, get_values_by_times
 
 ###################################################################################################
 ###################################################################################################
@@ -54,6 +55,7 @@ def compute_recall_percent(nwbfiles, data_folder):
 
 def get_confidence_response(nwbfiles, data_folder, labels):
     """Count the confidence response in each category across sessions."""
+    
     for ind, nwbfile in enumerate(nwbfiles):
         nwbfile, io = load_nwbfile(nwbfile, data_folder, return_io=True)
         name = nwbfile.session_id
@@ -61,3 +63,42 @@ def get_confidence_response(nwbfiles, data_folder, labels):
                                      labels=labels)
     
     return conf_counts
+
+def reshape_bins(target_bins, bins):
+    """Reshape chest bins from [3, 5] to [5, 7]"""
+    
+    add_row = np.zeros(len(target_bins[0]))
+    add_col = np.zeros((bins[1],1))
+    
+    temp = np.vstack([add_row, target_bins])
+    temp = np.vstack([temp, add_row])
+    temp = np.hstack([temp, add_col])
+    reshaped_target = np.hstack([add_col, temp])
+    
+    return reshaped_target
+
+def get_pos_per_bin(intersect, chest_trial_number, ptimes, positions, spikes, nav_starts, ch_openings_all):
+    """Get chest position, spikes, spike positions within a specific bin"""
+    
+    tpos_all, tspikes_x, tspikes_y = [], [], []
+    for ind in intersect:
+        if ind not in chest_trial_number[:,0]:
+            t_time, t_pos = get_values_by_time_range(ptimes, positions, ch_openings_all[ind-1], ch_openings_all[ind])
+            t_spikes = get_range(spikes, ch_openings_all[ind-1], ch_openings_all[ind])
+
+        else:
+            ch_trial = int(ind / 4)
+            t_time, t_pos = get_values_by_time_range(ptimes, positions, nav_starts[ch_trial], ch_openings_all[ind])
+            t_spikes = get_range(spikes, nav_starts[ch_trial], ch_openings_all[ind])
+
+        tpos_all.append(t_pos)
+        t_spike_positions = get_values_by_times(t_time, t_pos, t_spikes, threshold=0.25)
+        tspikes_x.append(t_spike_positions[0])
+        tspikes_y.append(t_spike_positions[1])
+
+    tspikes_x = np.concatenate(tspikes_x).ravel()
+    tspikes_y = np.concatenate(tspikes_y).ravel()
+    
+    tspikes_pos = np.array([tspikes_x, tspikes_y])
+    
+    return tpos_all, tspikes_pos

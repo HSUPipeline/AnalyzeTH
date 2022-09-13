@@ -7,7 +7,8 @@ from spiketools.plts.data import plot_bar, plot_hist
 from spiketools.plts.spatial import create_heat_title
 from spiketools.plts.utils import check_ax, savefig, set_plt_kwargs
 from spiketools.plts.annotate import _add_vlines, _add_box_shades, _add_hlines
-
+from spiketools.plts.spatial import plot_positions, plot_heatmap
+# from utils import reshape_bins, get_pos_per_bin
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -188,3 +189,37 @@ def plot_confidence_response(conf_all, conf_THF, conf_THO):
     ax2.spines.top.set_visible(False)
     ax2.yaxis.set_ticks_position('left')
     ax2.xaxis.set_ticks_position('bottom')
+    
+
+def plot_example_target(n_bins, target_bins, chests_per_bin, tpos_per_bin, tspikes_pos_per_bin, 
+                        chest_x, chest_y, reshaped_bins, area_range, name):
+    """Plot individual bins in selected example spatial target cells """
+
+    fig=plt.figure(figsize=(20, 50))
+    plt.subplots_adjust(wspace=0.1, hspace=0.1)
+    plt.title(create_heat_title('{}'.format(name), target_bins), fontsize=25)
+    plt.axis("off")
+
+    for ind in range(n_bins):
+        ax1 = fig.add_subplot(target_bins.shape[0], target_bins.shape[1], ind+1)
+        ax2 = fig.add_subplot(target_bins.shape[0], target_bins.shape[1], ind+1, frame_on=False)
+        ax1.axis("on")
+
+        if chests_per_bin[ind] == []:
+
+            plot_heatmap(target_bins, ax=ax1, aspect='auto', alpha=0.6)
+            ax2.axis("off")
+
+        else: 
+
+            tspikes = {'positions' : np.array([tspikes_pos_per_bin[ind][0], tspikes_pos_per_bin[ind][1]]), 
+                       'color' : 'red', 'ms' : 10, 'alpha' : 0.7}
+            landmarks = [{'positions' : np.array([chest_x[ind], chest_y[ind]]),
+                          'color' : 'green', 'ms' : 40, 'alpha' : 0.7}]
+
+            plot_heatmap(reshaped_bins, ignore_zero=True, ax=ax1, aspect='auto', alpha=0.6)
+            plot_positions(tpos_per_bin[ind], tspikes, landmarks, ax=ax2, xlim=area_range[0], ylim=area_range[1])
+
+        ax1.axis("on")
+        ax1.set_yticks([])
+        ax1.set_xticks([])
