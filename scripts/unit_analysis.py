@@ -9,7 +9,7 @@ from convnwb.io import load_nwbfile, get_files, save_json, save_txt
 from convnwb.io.utils import file_in_list
 from convnwb.utils.log import print_status
 
-from spiketools.measures import compute_isis
+from spiketools.measures.spikes import compute_isis
 from spiketools.measures.trials import compute_segment_frs
 from spiketools.stats.shuffle import shuffle_spikes
 from spiketools.stats.trials import compare_pre_post_activity
@@ -18,7 +18,7 @@ from spiketools.plts.spatial import plot_positions, plot_heatmap, create_heat_ti
 from spiketools.plts.trials import plot_rasters, create_raster_title
 from spiketools.plts.data import plot_bar, plot_polar_hist, plot_text
 from spiketools.plts.stats import plot_surrogates
-from spiketools.plts.annotate import color_pval
+from spiketools.plts.annotate import color_pvalue
 from spiketools.plts.utils import make_grid, get_grid_subplot, save_figure
 from spiketools.stats.permutations import compute_surrogate_stats
 from spiketools.spatial.occupancy import (compute_occupancy, compute_bin_edges, compute_bin_assignment,
@@ -297,7 +297,7 @@ def main():
                 plot_rasters(all_chests, xlim=WINDOWS['trial_range'], vline=0,
                              title=create_raster_title('All Chests', fr_pre_all, fr_post_all,
                                  results['fr_t_val_all'], results['fr_p_val_all']),
-                             title_color=color_pval(results['fr_p_val_all']),
+                             title_color=color_pvalue(results['fr_p_val_all']),
                              ax=get_grid_subplot(grid, slice(1, 3), slice(0, 2)))
 
 
@@ -305,12 +305,12 @@ def main():
                 plot_rasters(empty_trials, xlim=WINDOWS['trial_range'], vline=0,
                              title=create_raster_title('Empty', fr_pre_empt, fr_post_empt,
                                  results['fr_t_val_empt'], results['fr_p_val_empt']),
-                             title_color=color_pval(results['fr_p_val_empt']), title_fontsize=14,
+                             title_color=color_pvalue(results['fr_p_val_empt']), title_fontsize=14,
                              ax=get_grid_subplot(grid, 1, 2))
                 plot_rasters(full_trials, xlim=WINDOWS['trial_range'], vline=0,
                              title=create_raster_title('Full', fr_pre_full, fr_post_full,
                                 results['fr_t_val_full'], results['fr_p_val_full']),
-                             title_color=color_pval(results['fr_p_val_full']), title_fontsize=14,
+                             title_color=color_pvalue(results['fr_p_val_full']), title_fontsize=14,
                              ax=get_grid_subplot(grid, 2, 2))
 
                 # ax30: positional firing
@@ -328,7 +328,7 @@ def main():
                     plot_surrogates(surrs['place_info'], results['place_info'],
                                     results['place_info_surr_p_val'],
                                     title='Place Surrogates (INFO)',
-                                    title_color=color_pval(results['place_info_surr_p_val']),
+                                    title_color=color_pvalue(results['place_info_surr_p_val']),
                                     ax=get_grid_subplot(grid, 3, 2))
 
                 # ax42: place surrogates (anova)
@@ -336,7 +336,7 @@ def main():
                     plot_surrogates(surrs['place_anova'], results['place_anova'],
                                     results['place_anova_surr_p_val'],
                                     title='Place Surrogates (ANOVA)',
-                                    title_color=color_pval(results['place_anova_surr_p_val']),
+                                    title_color=color_pvalue(results['place_anova_surr_p_val']),
                                     ax=get_grid_subplot(grid, 4, 2))
 
                 # ax50: serial position
@@ -352,7 +352,7 @@ def main():
                     plot_surrogates(surrs['target_info'], results['target_info'],
                                     results['target_info_surr_p_val'],
                                     title='Target Surrogates (INFO)',
-                                    title_color=color_pval(results['target_info_surr_p_val']),
+                                    title_color=color_pvalue(results['target_info_surr_p_val']),
                                     ax=get_grid_subplot(grid, 5, 2))
 
                 # ax62: target surrogates (anova)
@@ -360,7 +360,7 @@ def main():
                     plot_surrogates(surrs['target_anova'], results['target_anova'],
                                     results['target_anova_surr_p_val'],
                                     title='Target Surrogates (ANOVA)',
-                                    title_color=color_pval(results['target_anova_surr_p_val']),
+                                    title_color=color_pvalue(results['target_anova_surr_p_val']),
                                     ax=get_grid_subplot(grid, 6, 2))
 
                 # Save out report

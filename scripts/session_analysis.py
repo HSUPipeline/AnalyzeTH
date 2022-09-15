@@ -11,7 +11,7 @@ from spiketools.plts.data import plot_bar, plot_hist, plot_text, plot_barh
 from spiketools.plts.spatial import plot_heatmap, plot_positions
 from spiketools.plts.spikes import plot_firing_rates
 from spiketools.plts.utils import make_grid, get_grid_subplot, save_figure
-from spiketools.plts.annotate import _add_vlines
+from spiketools.plts.annotate import add_vlines
 
 # Import settings from local file
 from settings import RUN, PATHS, BINS, OCCUPANCY
@@ -129,8 +129,8 @@ def main():
         # 20: plot the player's speed distribution
         plot_hist(speed, bins=25, title='Speeds', yticks=[],
                   ax=get_grid_subplot(grid, 2, 0))
-        _add_vlines(OCCUPANCY['speed_threshold'], color='red',
-                    ax=get_grid_subplot(grid, 2, 0))
+        add_vlines(OCCUPANCY['speed_threshold'], color='red',
+                   ax=get_grid_subplot(grid, 2, 0))
 
         # 30: behaviour text
         plot_text(create_behav_str(behav_info), ax=get_grid_subplot(grid, 3, 0))
