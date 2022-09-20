@@ -4,6 +4,7 @@
 import numpy as np
 
 from convnwb.io import load_nwbfile
+
 from spiketools.utils.epoch import epoch_data_by_range
 from spiketools.utils.base import count_elements
 from spiketools.utils.extract import get_range, get_values_by_time_range, get_values_by_times
