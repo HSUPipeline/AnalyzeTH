@@ -3,9 +3,10 @@
 
 import numpy as np
 
+from sklearn.preprocessing import MinMaxScaler
 from convnwb.io import load_nwbfile
 
-from spiketools.utils.epoch import epoch_data_by_range
+from spiketools.utils.epoch import epoch_data_by_range, epoch_spikes_by_range
 from spiketools.utils.base import count_elements
 from spiketools.utils.extract import get_range, get_values_by_time_range, get_values_by_times
 
@@ -103,3 +104,14 @@ def get_pos_per_bin(intersect, chest_trial_number, ptimes, positions, spikes, na
     tspikes_pos = np.array([tspikes_x, tspikes_y])
     
     return tpos_all, tspikes_pos
+
+
+def normalize_segment_spikes(t_spikes, start, stop, feature_range):
+    scaler = MinMaxScaler(feature_range=feature_range)
+    seg_spikes = epoch_spikes_by_range(t_spikes, start, stop, reset=True)
+    seg_spikes_norm = []
+    for ind in range(len(seg_spikes)):
+        spikes_norm = scaler.fit_transform(seg_spikes[ind].reshape(-1, 1)) if seg_spikes[ind].size != 0 else np.array([])
+        seg_spikes_norm.append(spikes_norm.flatten())
+    
+    return seg_spikes_norm

@@ -194,7 +194,7 @@ def plot_example_target(n_bins, target_bins, chests_per_bin, tpos_per_bin, tspik
         
 def plot_surr_stats(surrogates, f_val, p_val, n_bin, ax=None, **plt_kwargs): 
     
-    ax= check_ax(ax, return_current=True)
+    ax = check_ax(ax, return_current=True)
     
     _, _, bars = ax.hist(surrogates, bins=n_bin, color='gray')
     for bar in bars:
@@ -206,8 +206,4 @@ def plot_surr_stats(surrogates, f_val, p_val, n_bin, ax=None, **plt_kwargs):
     text = 'p={:4.4f}'.format(p_val)
     ax.plot([], label=text)
     ax.legend(handlelength=0, edgecolor='white', loc='best', fontsize=12)
-    ax.set(xlabel='significance (f-value)', ylabel='count')
-    
-    # Drop after spiketools update
-    ax.spines.right.set_visible(False)
-    ax.spines.top.set_visible(False)
+    ax.set(xlabel='F-value', ylabel='Count')
