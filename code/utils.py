@@ -21,6 +21,7 @@ def select_navigation(data, navigation_starts, navigation_stops):
 
     return times_trials, values_trials
 
+
 def stack_trials(times_trials, values_trials):
     """Helper function to recombine data across trials."""
 
@@ -29,9 +30,11 @@ def stack_trials(times_trials, values_trials):
 
     return times, values
 
+
 def normalize_data(data):
     """Helper function to normalize data into range of [0, 1]. """
     return (data - np.min(data)) / (np.max(data) - np.min(data))
+
 
 def compute_distance_error(nwbfiles, data_folder):
     """Compute the normalized distance error across sessions."""
@@ -45,6 +48,7 @@ def compute_distance_error(nwbfiles, data_folder):
     
     return error_normalized
 
+
 def compute_recall_percent(nwbfiles, data_folder):
     """Compute the percentge of recall across sessions."""
     
@@ -54,6 +58,7 @@ def compute_recall_percent(nwbfiles, data_folder):
         correct[ind] = np.mean(nwbfile.trials.correct[:])*100
         
     return correct
+
 
 def get_confidence_response(nwbfiles, data_folder, labels):
     """Count the confidence response in each category across sessions."""
@@ -65,6 +70,7 @@ def get_confidence_response(nwbfiles, data_folder, labels):
                                      labels=labels)
     
     return conf_counts
+
 
 def reshape_bins(target_bins, bins):
     """Reshape chest bins from [3, 5] to [5, 7]"""
@@ -79,8 +85,9 @@ def reshape_bins(target_bins, bins):
     
     return reshaped_target
 
+
 def get_pos_per_bin(intersect, chest_trial_number, ptimes, positions, spikes, nav_starts, ch_openings_all):
-    """Get chest position, spikes, spike positions within a specific bin"""
+    """Get chest positions, spikes, subject positions within a specific bin"""
     
     tpos_all, tspikes_x, tspikes_y = [], [], []
     for ind in intersect:
