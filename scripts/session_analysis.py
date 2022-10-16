@@ -87,12 +87,12 @@ def main():
         outputs['subject'] =nwbfile.subject.subject_id
         outputs['session'] = nwbfile.session_id
         for field in ['n_units', 'n_keep', 'n_unit_channels']:
-           outputs[field] = units_info[field]
+            outputs[field] = units_info[field]
         for field in ['n_trials', 'session_length', 'n_chests', 'n_items', '%_correct', 'avg_error']:
-           outputs[field] = behav_info[field]
+            outputs[field] = behav_info[field]
 
         # Save out session results
-        save_json(outputs, nwbfilename, folder=str(PATHS['RESULTS'] / 'sessions' / RUN['TASK']))
+        save_json(outputs, nwbfile.session_id, folder=str(PATHS['RESULTS'] / 'sessions' / RUN['TASK']))
 
         ## CREATE REPORT
 
