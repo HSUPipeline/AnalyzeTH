@@ -385,7 +385,7 @@ def main():
                 if not UNITS['CONTINUE_ON_FAIL']:
                     raise
                 print_status(RUN['VERBOSE'], 'issue running unit # {}'.format(uid), 2)
-                save_txt(traceback.format_exc(), name, folder=results_path / 'zFailed')
+                save_txt(traceback.format_exc(), name, folder=results_folder / 'zFailed')
 
         # Close the nwbfile
         io.close()
