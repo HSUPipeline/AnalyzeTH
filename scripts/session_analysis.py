@@ -7,6 +7,7 @@ from convnwb.io.utils import file_in_list
 from convnwb.utils.log import print_status
 
 from spiketools.spatial.occupancy import compute_occupancy
+from spiketools.utils.base import add_key_prefix, combine_dicts
 from spiketools.plts.data import plot_bar, plot_hist, plot_text, plot_barh
 from spiketools.plts.spatial import plot_heatmap, plot_positions
 from spiketools.plts.spikes import plot_firing_rates
@@ -35,6 +36,20 @@ def main():
     """Run session analyses."""
 
     print_status(RUN['VERBOSE'], '\n\nRUNNING SESSION ANALYSES - {}\n\n'.format(RUN['TASK']), 0)
+
+    # Define output folders
+    results_folder = PATHS['RESULTS'] / 'sessions' / RUN['TASK']
+    reports_folder = PATHS['REPORTS'] / 'sessions' / RUN['TASK']
+
+    # Collect a copy of all settings with a prefixes
+    all_settings = [
+        add_key_prefix(BINS, 'bins'),
+        add_key_prefix(OCCUPANCY, 'occupancy'),
+    ]
+
+    # Save out run settings
+    save_json(RUN, 'run.json', folder=results_folder)
+    save_json(combine_dicts(all_settings), 'settings.json', folder=results_folder)
 
     nwbfiles = get_files(PATHS['DATA'], select=RUN['TASK'])
 
@@ -87,12 +102,12 @@ def main():
         outputs['subject'] =nwbfile.subject.subject_id
         outputs['session'] = nwbfile.session_id
         for field in ['n_units', 'n_keep', 'n_unit_channels']:
-           outputs[field] = units_info[field]
+            outputs[field] = units_info[field]
         for field in ['n_trials', 'session_length', 'n_chests', 'n_items', '%_correct', 'avg_error']:
-           outputs[field] = behav_info[field]
+            outputs[field] = behav_info[field]
 
         # Save out session results
-        save_json(outputs, nwbfilename, folder=str(PATHS['RESULTS'] / 'sessions' / RUN['TASK']))
+        save_json(outputs, nwbfile.session_id, folder=results_folder)
 
         ## CREATE REPORT
 
@@ -146,8 +161,7 @@ def main():
                   ax=get_grid_subplot(grid, 3, slice(3, 5)))
 
         # Save out report
-        save_figure('session_report_' + nwbfile.session_id + '.pdf',
-                    PATHS['REPORTS'] / 'sessions' / RUN['TASK'], close=True)
+        save_figure('session_report_' + nwbfile.session_id + '.pdf', reports_folder, close=True)
 
         # Close the nwbfile
         io.close()

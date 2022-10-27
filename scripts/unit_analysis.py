@@ -29,7 +29,7 @@ from spiketools.spatial.information import compute_spatial_information
 from spiketools.spatial.utils import convert_2dindices
 from spiketools.utils.extract import get_values_by_times
 from spiketools.utils.epoch import epoch_spikes_by_event, epoch_spikes_by_range
-from spiketools.utils.base import select_from_list
+from spiketools.utils.base import select_from_list, add_key_prefix, combine_dicts
 from spiketools.utils.run import create_methods_list
 
 # Import settings from local file
@@ -52,14 +52,29 @@ def main():
 
     print_status(RUN['VERBOSE'], '\n\nANALYZING UNIT DATA - {}\n\n'.format(RUN['TASK']), 0)
 
+    # Define output folders
+    results_folder = PATHS['RESULTS'] / 'units' / RUN['TASK']
+    reports_folder = PATHS['REPORTS'] / 'units' / RUN['TASK']
+
+    # Collect a copy of all settings with a prefixes
+    all_settings = [
+        add_key_prefix(BINS, 'bins'),
+        add_key_prefix(OCCUPANCY, 'occupancy'),
+        add_key_prefix(WINDOWS, 'windows'),
+        add_key_prefix(SURROGATES, 'surrogates'),
+    ]
+
+    # Save out run settings
+    save_json(METHODS, 'methods.json', folder=results_folder)
+    save_json(combine_dicts([RUN, UNITS]), 'run.json', folder=results_folder)
+    save_json(combine_dicts(all_settings), 'settings.json', folder=results_folder)
+
     # Get the list of NWB files
     nwbfiles = get_files(PATHS['DATA'], select=RUN['TASK'])
 
     # Get list of already generated and failed units, & drop file names
-    output_files = get_files(PATHS['RESULTS'] / 'units' / RUN['TASK'],
-                             select='json', drop_extensions=True)
-    failed_files = get_files(PATHS['RESULTS'] / 'units' / RUN['TASK'] / 'zFailed',
-                             select='json', drop_extensions=True)
+    output_files = get_files(results_folder, select='json', drop_extensions=True)
+    failed_files = get_files(results_folder / 'zFailed', select='json', drop_extensions=True)
 
     for nwbfilename in nwbfiles:
 
@@ -275,7 +290,7 @@ def main():
                         compute_surrogate_stats(results[analysis], surrs[analysis])
 
                 # Save out unit results
-                save_json(results, name + '.json', folder=str(PATHS['RESULTS'] / 'units' / RUN['TASK']))
+                save_json(results, name + '.json', folder=results_folder)
 
                 ### MAKE REPORT
 
@@ -364,15 +379,13 @@ def main():
                                     ax=get_grid_subplot(grid, 6, 2))
 
                 # Save out report
-                save_figure('unit_report_' + name + '.pdf', PATHS['REPORTS'] / 'units' / RUN['TASK'],
-                            close=True)
+                save_figure('unit_report_' + name + '.pdf', reports_folder, close=True)
 
             except Exception as excp:
                 if not UNITS['CONTINUE_ON_FAIL']:
                     raise
                 print_status(RUN['VERBOSE'], 'issue running unit # {}'.format(uid), 2)
-                save_txt(traceback.format_exc(), name,
-                         folder=str(PATHS['RESULTS'] / 'units' / RUN['TASK'] / 'zFailed'))
+                save_txt(traceback.format_exc(), name, folder=results_folder / 'zFailed')
 
         # Close the nwbfile
         io.close()

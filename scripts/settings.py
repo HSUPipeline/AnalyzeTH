@@ -25,8 +25,8 @@ RUN = {
 
 # Set the data path to load from
 BASE_PATH = Path('/Users/tom/Data/JacobsLab/WVTH/')
-#BASE_PATH = Path('/scratch/tom.donoghue/TH/')
-DATA_PATH = BASE_PATH / 'NWB'
+#BASE_PATH = Path('/data12/jacobs_lab/WVTH/')
+DATA_PATH = BASE_PATH / 'nwb'
 
 # Set the path to save out reports & results
 REPORTS_PATH = Path('../reports/')
@@ -70,12 +70,21 @@ METHODS = {
 ###################################################################################################
 ## ANALYSIS SETTINGS
 
+## AREA SETTINGS
+
+# Area range for place
+
+# USE BOUNDARY RANGE FROM FILES
+
+# Area range for chests
+CH_X_RANGE = [360, 410]
+CH_Y_RANGE = [320, 400]
+CH_AREA_RANGE = [CH_X_RANGE, CH_Y_RANGE]
+
 ## BIN SETTINGS
 
-#PLACE_BINS = [7, 21]
-PLACE_BINS = [9, 12]
-#CHEST_BINS = [5, 7]
-CHEST_BINS = [6, 8]
+PLACE_BINS = [5, 7]
+CHEST_BINS = [3, 5]
 
 BINS = {
     'place' : PLACE_BINS,
@@ -111,7 +120,7 @@ WINDOWS = {
 ## SURROGATE SETTINGS
 
 SHUFFLE_APPROACH = 'CIRCULAR'   # 'CIRCULAR', 'BINCIRC'
-N_SHUFFLES = 25
+N_SHUFFLES = 25 # TODO: UPDATE N_SHUFFLES
 
 SURROGATES = {
     'approach' : SHUFFLE_APPROACH,
