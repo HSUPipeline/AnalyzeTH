@@ -31,22 +31,13 @@ def stack_trials(times_trials, values_trials):
     return times, values
 
 
-def normalize_data(data):
-    """Helper function to normalize data into range of [0, 1]. """
-    return (data - np.min(data)) / (np.max(data) - np.min(data))
+def normalize_data(data, feature_range):
+    """Helper function to normalize data into specific range. """
 
-
-def compute_distance_error(nwbfiles, data_folder):
-    """Compute the normalized distance error across sessions."""
+    data_std = (data - data.min(axis=0)) / (data.max(axis=0) - data.min(axis=0))
+    data_scaled = data_std * (feature_range[1] - feature_range[0]) + feature_range[0]
     
-    error_avg = np.zeros(len(nwbfiles))
-    for ind, nwbfile in enumerate(nwbfiles):
-        nwbfile, io = load_nwbfile(nwbfile, data_folder, return_io=True)
-        error = nwbfile.trials.error[:]
-        error_avg[ind] = np.mean(error)
-    error_normalized = normalize_data(error_avg)
-    
-    return error_normalized
+    return data_scaled
 
 
 def compute_recall_percent(nwbfiles, data_folder):
@@ -63,31 +54,35 @@ def compute_recall_percent(nwbfiles, data_folder):
 def get_confidence_response(nwbfiles, data_folder, labels):
     """Count the confidence response in each category across sessions."""
     
+    conf_all = []
     for ind, nwbfile in enumerate(nwbfiles):
         nwbfile, io = load_nwbfile(nwbfile, data_folder, return_io=True)
-        name = nwbfile.session_id
-        conf_counts = count_elements(nwbfile.trials.confidence_response.data[:],
-                                     labels=labels)
-    
+        conf = nwbfile.trials.confidence_response.data[:]
+        conf_all.append(conf)
+        
+    conf_all = np.concatenate(conf_all).ravel()
+    conf_counts = count_elements(conf_all, labels=labels)
+
     return conf_counts
 
 
 def reshape_bins(target_bins, bins):
-    """Reshape chest bins from [3, 5] to [5, 7]"""
+    """Reshape chest bins from [5, 8] to [7, 10] for visualization purpose."""
     
-    add_row = np.zeros(len(target_bins[0]))
-    add_col = np.zeros((bins[1],1))
-    
-    temp = np.vstack([add_row, target_bins])
+    target_tp = np.transpose(target_bins)
+    add_row = np.zeros(len(target_tp[0]))
+    add_col = np.zeros((bins[0],1))
+
+    temp = np.vstack([add_row, target_tp])
     temp = np.vstack([temp, add_row])
     temp = np.hstack([temp, add_col])
-    reshaped_target = np.hstack([add_col, temp])
+    reshaped_target_bins = np.hstack([add_col, temp])
     
-    return reshaped_target
+    return reshaped_target_bins
 
 
 def get_pos_per_bin(intersect, chest_trial_number, ptimes, positions, spikes, nav_starts, ch_openings_all):
-    """Get chest positions, spikes, subject positions within a specific bin"""
+    """Get chest position, spikes, spike positions within a specific bin"""
     
     tpos_all, tspikes_x, tspikes_y = [], [], []
     for ind in intersect:
@@ -113,12 +108,15 @@ def get_pos_per_bin(intersect, chest_trial_number, ptimes, positions, spikes, na
     return tpos_all, tspikes_pos
 
 
-def normalize_segment_spikes(t_spikes, start, stop, feature_range):
-    scaler = MinMaxScaler(feature_range=feature_range)
+def normalize_spikes_by_segment(t_spikes, start, stop, feature_range):
+    """Normalize spikes into specific ranges by segment"""
+    
     seg_spikes = epoch_spikes_by_range(t_spikes, start, stop, reset=True)
     seg_spikes_norm = []
-    for ind in range(len(seg_spikes)):
-        spikes_norm = scaler.fit_transform(seg_spikes[ind].reshape(-1, 1)) if seg_spikes[ind].size != 0 else np.array([])
-        seg_spikes_norm.append(spikes_norm.flatten())
     
+    for ind in range(len(seg_spikes)):
+        spikes_norm = normalize_data(seg_spikes[ind], feature_range) if seg_spikes[ind].size != 0 else np.array([])
+        spikes_norm[np.isnan(spikes_norm)] = 0
+        seg_spikes_norm.append(spikes_norm.flatten())
+        
     return seg_spikes_norm
