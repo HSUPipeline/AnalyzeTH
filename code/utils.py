@@ -3,6 +3,7 @@
 
 import numpy as np
 
+from sklearn.preprocessing import MinMaxScaler
 from convnwb.io import load_nwbfile
 
 from spiketools.utils.epoch import epoch_data_by_range, epoch_spikes_by_range

@@ -127,7 +127,7 @@ def plot_place_target_comparison(place_bin_frs, target_bin_frs, surr_place, surr
     plot_heatmap(place_bin_frs, ax=get_grid_subplot(grid, slice(0, 2), 0), 
                  title='FR by subject position', aspect='auto', cbar=True, **plt_kwargs)
     plt.axis("on")
-    plot_heatmap(target_bin_frs, ignore_zero=True, ax=get_grid_subplot(grid, slice(0, 2), 1), 
+    plot_heatmap(target_bin_frs, ignore_zero=True, transpose=True, ax=get_grid_subplot(grid, slice(0, 2), 1), 
                  title='FR by target position', aspect='auto', cbar=True, **plt_kwargs)
     plt.axis("on")
     
