@@ -111,6 +111,7 @@ def plot_surrogates(surrogates, n_bin, data_value=None, p_value=None, ax=None, *
 def plot_place_target_comparison(place_bin_frs, target_bin_frs, surr_place, surr_target, n_bin,
                                 fval_place, favl_target, pval_place, pval_target, **plt_kwargs):
     """Plot firing rate maps of example place & target cells with their corresponding distribution of surrogate data"""
+    
     grid = make_grid(3, 2, figsize=(10, 8), wspace=0.3, **plt_kwargs)
     plot_heatmap(place_bin_frs, ax=get_grid_subplot(grid, slice(0, 2), 0), 
                  title='FR by subject position', aspect='auto', cbar=True, **plt_kwargs)
