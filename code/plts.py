@@ -37,8 +37,8 @@ def plot_task_structure(trials, ax=None, **plt_kwargs):
                          ax=ax, **plt_kwargs)
 
 
-def plot_spikes_trial(spikes, spikes_trial, nav_stops_trial, nav_spikes_all, nav_starts, 
-                      nav_stops, openings, name, frs, hlines, ax=None, **plt_kwargs):
+def plot_spikes_trial(spikes, tspikes, nav_spikes, nav_starts, nav_stops, tnav_stops, 
+                      openings, frs, title, hlines=None, **plt_kwargs):
     """Plot the spike raster for whole session, navigation periods and individual trials."""
     
     fig = plt.figure(figsize=(18,20))
@@ -50,39 +50,27 @@ def plot_spikes_trial(spikes, spikes_trial, nav_stops_trial, nav_spikes_all, nav
     ax3 = plt.subplot(gs[1,:])
     plt.subplots_adjust(wspace=0.1, hspace=0.2)
 
-    ypos = (np.arange(len(spikes_trial))).tolist()
-    plot_rasters(spikes_trial, show_axis=True, ax=ax0, xlabel='Spike times', 
-                 ylabel="Trial number", yticks=range(0,len(spikes_trial)))
-    add_box_shades(nav_stops_trial, np.arange(len(spikes_trial)), x_range=0.1, y_range=0.5, ax=ax0)
-    add_hlines(hlines, ax=ax0, color='green', alpha=0.4)
+    ypos = (np.arange(len(tspikes))).tolist()
+    plot_rasters(tspikes, show_axis=True, ax=ax0, xlabel='Spike times', 
+                 ylabel="Trial number", yticks=range(0,len(tspikes)))
+    add_box_shades(tnav_stops, np.arange(len(tspikes)), x_range=0.1, y_range=0.5, ax=ax0)
     
     plot_barh(frs, ypos, ax=ax1, xlabel="FR")
-
-    plot_rasters(spikes, ax=ax2, show_axis=True, ylabel='spikes from whole session', yticks=[])
+    plot_rasters(spikes, ax=ax2, show_axis=True, ylabel='spikes from whole session', yticks=[],
+                 title=create_heat_title('{}'.format(title), frs))
     add_vlines(nav_stops, ax=ax2, color='purple') # navigation starts
     add_vlines(nav_starts, ax=ax2, color='orange')# navigation stops 
 
-    plot_rasters(nav_spikes_all, vline=openings, show_axis=True, ax=ax3, 
+    plot_rasters(nav_spikes, vline=openings, show_axis=True, ax=ax3, 
                  ylabel='Spikes from navigation periods', yticks=[])
-
-    ax1.tick_params(left=False)
-    ax2.tick_params(left=False)
-    ax3.tick_params(left=False)
     
-    # Drop after spiketools update 
-    ax0.spines.right.set_visible(False)
-    ax0.spines.top.set_visible(False)
-    ax1.spines.left.set_visible(False)
-    ax1.spines.right.set_visible(False)
-    ax1.spines.top.set_visible(False)
-    ax2.spines.right.set_visible(False)
-    ax2.spines.left.set_visible(False)
-    ax2.spines.top.set_visible(False)
-    ax3.spines.right.set_visible(False)
-    ax3.spines.left.set_visible(False)
-    ax3.spines.top.set_visible(False)
-
-    fig.suptitle(create_heat_title('{}'.format(name), frs), fontsize=20)
+    if hlines: 
+        add_hlines(hlines, ax=ax0, color='green', alpha=0.4)
+    
+    drop_spines(ax0, ['top', 'right'])
+    drop_spines(ax1, ['top', 'right'])
+    drop_spines(ax2, ['top', 'right'])
+    drop_spines(ax3, ['top', 'right'])
     
 
 def plot_surrogates(surrogates, n_bin, data_value=None, p_value=None, ax=None, **plt_kwargs):
@@ -172,20 +160,3 @@ def plot_example_target(n_bins, target_bins, reshaped_target_bins, chests_per_bi
                            xlim=area_range[0], ylim=area_range[1])
 
         ax1.axis("on")
-        
-        
-# def plot_surr_stats(surrogates, f_val, p_val, n_bin, ax=None, **plt_kwargs): 
-    
-#     ax = check_ax(ax, return_current=True)
-    
-#     _, _, bars = ax.hist(surrogates, bins=n_bin, color='gray', **plt_kwargs)
-#     for bar in bars:
-#         if bar.get_x() > f_val:
-#             bar.set_facecolor('lightgray')
-#     add_vlines(f_val, ax=ax, color='darkred', linestyle='solid', linewidth=4)
-#     ax.plot(f_val, 0, 'o', zorder=10, clip_on=False, color='darkred', markersize=15)
-    
-#     text = 'p={:4.4f}'.format(p_val)
-#     ax.plot([], label=text)
-#     ax.legend(handlelength=0, edgecolor='white', loc='best', fontsize=16)
-# #     ax.set(xlabel='F-statistics', ylabel='Count')

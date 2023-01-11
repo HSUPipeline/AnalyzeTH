@@ -31,13 +31,13 @@ def stack_trials(times_trials, values_trials):
     return times, values
 
 
-def normalize_data(data, feature_range):
-    """Helper function to normalize data into specific range. """
+# def normalize_data(data, feature_range):
+#     """Helper function to normalize data into specific range. """
 
-    data_std = (data - data.min(axis=0)) / (data.max(axis=0) - data.min(axis=0))
-    data_scaled = data_std * (feature_range[1] - feature_range[0]) + feature_range[0]
+#     data_std = (data - data.min(axis=0)) / (data.max(axis=0) - data.min(axis=0))
+#     data_scaled = data_std * (feature_range[1] - feature_range[0]) + feature_range[0]
     
-    return data_scaled
+#     return data_scaled
 
 
 def compute_recall_percent(nwbfiles, data_folder):
