@@ -25,13 +25,3 @@ This notebook examines spatial-target related neural activity, including:
 
 This notebook examines firing related to sequences in the task, including:
 - Serial position activity: cell firing to the order of the chests within a trial
-
-### 05-HeadDirectionCells
-
-This notebook examines head-direction related neural activity, including:
-- Neural activity related to head-direction
-
-### 06-ResponsePlaceAnalysis
-
-This notebook examines response related neural activity, including:
-- Neural activity related to moving and choosing the response location
