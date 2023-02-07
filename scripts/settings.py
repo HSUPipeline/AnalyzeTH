@@ -9,7 +9,9 @@ from pathlib import Path
 TASK = 'THF'
 
 # Set files to ignore
-IGNORE = []
+IGNORE = [
+   # 'THF_wv002_session_1',
+]
 
 # Set verboseness
 VERBOSE = True
@@ -24,8 +26,8 @@ RUN = {
 ## PATHS
 
 # Set the data path to load from
-BASE_PATH = Path('/Users/tom/Data/JacobsLab/WVTH/')
-#BASE_PATH = Path('/data12/jacobs_lab/WVTH/')
+#BASE_PATH = Path('/Users/tom/Data/JacobsLab/WVTH/')
+BASE_PATH = Path('/data12/jacobs_lab/WVTH/')
 DATA_PATH = BASE_PATH / 'nwb'
 
 # Set the path to save out reports & results
@@ -45,7 +47,7 @@ PATHS = {
 # Set whether to skip units that have already been processed
 SKIP_ALREADY_RUN = False
 SKIP_FAILED = False
-CONTINUE_ON_FAIL = False
+CONTINUE_ON_FAIL = True
 
 UNITS = {
     'SKIP_ALREADY_RUN' : SKIP_ALREADY_RUN,
@@ -57,8 +59,8 @@ UNITS = {
 ## METHOD SETTINGS
 
 # Define which method(s) to run (all within list will be run)
-PLACE_METHODS = ['ANOVA', 'INFO']    # 'info', 'anova'
-TARGET_METHODS = ['ANOVA', 'INFO']   # 'info', 'anova'
+PLACE_METHODS = []# ['ANOVA', 'INFO']    # 'info', 'anova'
+TARGET_METHODS = ['ANOVA']#, 'INFO']   # 'info', 'anova'
 SERIAL_METHODS = ['ANOVA']           # 'anova'
 
 METHODS = {
@@ -83,8 +85,13 @@ CH_AREA_RANGE = [CH_X_RANGE, CH_Y_RANGE]
 
 ## BIN SETTINGS
 
+# # LARGE BINS
 PLACE_BINS = [5, 7]
-CHEST_BINS = [3, 5]
+CHEST_BINS = [2, 4]
+
+# ORIGINAL BINS
+#PLACE_BINS = [9, 12]
+#CHEST_BINS = [6, 8]
 
 BINS = {
     'place' : PLACE_BINS,
@@ -97,12 +104,14 @@ OCC_MINIMUM = 1
 OCC_SETNAN = True
 OCC_SPEED_THRESH = 5e-6
 OCC_TIME_THRESH = 0.25
+OCC_NORMALIZE = False
 
 OCCUPANCY = {
     'minimum' : OCC_MINIMUM,
     'set_nan' : OCC_SETNAN,
     'speed_threshold' : OCC_SPEED_THRESH,
     'time_threshold' : OCC_TIME_THRESH,
+    'normalize' : OCC_NORMALIZE,
 }
 
 ## TIME WINDOW SETTINGS
@@ -120,7 +129,7 @@ WINDOWS = {
 ## SURROGATE SETTINGS
 
 SHUFFLE_APPROACH = 'CIRCULAR'   # 'CIRCULAR', 'BINCIRC'
-N_SHUFFLES = 25 # TODO: UPDATE N_SHUFFLES
+N_SHUFFLES = 1000
 
 SURROGATES = {
     'approach' : SHUFFLE_APPROACH,

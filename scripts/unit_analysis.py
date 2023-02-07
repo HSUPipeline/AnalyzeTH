@@ -114,6 +114,7 @@ def main():
 
         # Get area ranges, adding a buffer to the z-range (for tower transport)
         area_range = [nwbfile.acquisition['boundaries']['x_range'].data[:],
+                      #nwbfile.acquisition['boundaries']['z_range'].data[:]]
                       nwbfile.acquisition['boundaries']['z_range'].data[:] + np.array([-15, 15])]
 
         # Get position data, selecting from navigation periods, and recombine across trials
@@ -369,6 +370,14 @@ def main():
                                     title='Target Surrogates (INFO)',
                                     title_color=color_pvalue(results['target_info_surr_p_val']),
                                     ax=get_grid_subplot(grid, 5, 2))
+                    
+                # ax60: serial position surrogates
+                if 'ANOVA' in METHODS['SERIAL']:
+                    plot_surrogates(surrs['serial_anova'], results['serial_anova'],
+                                    results['serial_anova_surr_p_val'],
+                                    title='Serial Surrogates (ANOVA)',
+                                    title_color=color_pvalue(results['serial_anova_surr_p_val']),
+                                    ax=get_grid_subplot(grid, 6, 0))
 
                 # ax62: target surrogates (anova)
                 if 'ANOVA' in METHODS['TARGET']:
