@@ -1,9 +1,7 @@
 """Plotting functions for TH analysis."""
 
-import matplotlib.pyplot as plt
 import numpy as np
-
-from matplotlib import gridspec
+import matplotlib.pyplot as plt
 
 from spiketools.plts.task import plot_task_structure as _plot_task_structure
 from spiketools.plts.trials import plot_rasters
@@ -41,36 +39,37 @@ def plot_spikes_trial(spikes, tspikes, nav_spikes, nav_starts, nav_stops, tnav_s
                       openings, frs, title, hlines=None, **plt_kwargs):
     """Plot the spike raster for whole session, navigation periods and individual trials."""
 
-    fig = plt.figure(figsize=(18, 20))
-    gs = gridspec.GridSpec(3, 2, width_ratios=[5, 1])
-
-    ax0 = plt.subplot(gs[2, 0])
-    ax1 = plt.subplot(gs[2, 1], sharey = ax0)
-    ax2 = plt.subplot(gs[0, :])
-    ax3 = plt.subplot(gs[1, :])
-    plt.subplots_adjust(wspace=0.1, hspace=0.2)
-
+    # Data orgs
     ypos = (np.arange(len(tspikes))).tolist()
-    plot_rasters(tspikes, show_axis=True, ax=ax0, xlabel='Spike times',
-                 ylabel="Trial number", yticks=range(0,len(tspikes)))
-    add_box_shades(tnav_stops, np.arange(len(tspikes)), x_range=0.1, y_range=0.5, ax=ax0)
 
-    plot_barh(frs, ypos, ax=ax1, xlabel="FR")
-    plot_rasters(spikes, ax=ax2, show_axis=True, ylabel='spikes from whole session', yticks=[],
+    # Initialize grid
+    grid = make_grid(3, 2, width_ratios=[5, 1],
+                     wspace=0.1, hspace=0.2, figsize=(18, 20))
+
+    # Row 0: spikes across session
+    ax0 = get_grid_subplot(grid, 0, slice(0, 2))
+    plot_rasters(spikes, ax=ax0, show_axis=True, ylabel='spikes from whole session', yticks=[],
                  title=create_heat_title('{}'.format(title), frs))
-    add_vlines(nav_stops, ax=ax2, color='purple')   # navigation starts
-    add_vlines(nav_starts, ax=ax2, color='orange')  # navigation stops
+    add_vlines(nav_stops, ax=ax0, color='purple')   # navigation starts
+    add_vlines(nav_starts, ax=ax0, color='orange')  # navigation stops
 
-    plot_rasters(nav_spikes, vline=openings, show_axis=True, ax=ax3,
+    # Row 1: spikes from navigation periods
+    ax1 = get_grid_subplot(grid, 1, slice(0, 2))
+    plot_rasters(nav_spikes, vline=openings, show_axis=True, ax=ax1,
                  ylabel='Spikes from navigation periods', yticks=[])
 
+    # Row 2: spikes across trials, with bar plot
+    ax2 = get_grid_subplot(grid, 2, 0)
+    ax2b = get_grid_subplot(grid, 2, 1, sharey=ax2)
+    plot_rasters(tspikes, show_axis=True, ax=ax2, xlabel='Spike times',
+                 ylabel="Trial number", yticks=range(0, len(tspikes)))
+    add_box_shades(tnav_stops, np.arange(len(tspikes)), x_range=0.1, y_range=0.5, ax=ax2)
+    plot_barh(frs, ypos, ax=ax2b, xlabel="FR")
     if hlines:
-        add_hlines(hlines, ax=ax0, color='green', alpha=0.4)
+        add_hlines(hlines, ax=ax2, color='green', alpha=0.4)
 
-    drop_spines(ax0, ['top', 'right'])
-    drop_spines(ax1, ['top', 'right'])
-    drop_spines(ax2, ['top', 'right'])
-    drop_spines(ax3, ['top', 'right'])
+    for cax in [ax0, ax1, ax2, ax2b]:
+        drop_spines(cax, ['top', 'right'])
 
 
 @savefig
@@ -143,7 +142,7 @@ def plot_example_target(n_bins, target_bins, reshaped_target_bins, chests_per_bi
     for selected example spatial target cells.
     """
 
-    fig=plt.figure(figsize=(20, 50))
+    fig = plt.figure(figsize=(20, 50))
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
     plt.title(create_heat_title('{}'.format(name), target_bins), fontsize=25)
     plt.axis("off")
