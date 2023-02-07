@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from spiketools.measures import compute_firing_rate
+from spiketools.measures.spikes import compute_firing_rate
 from spiketools.utils.base import count_elements
 from spiketools.utils.timestamps import convert_sec_to_min
 
@@ -60,7 +60,7 @@ def create_units_info(units):
 
     # Get units dataframe & select only the keep units
     units_df = units.to_dataframe()
-    units_df = units_df[units_df.keep == True]
+    units_df = units_df[bool(units_df.keep)]
 
     units_info['n_units'] = len(units)
     units_info['n_keep'] = int(sum(units.keep[:]))
