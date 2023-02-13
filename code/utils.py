@@ -6,31 +6,27 @@ from convnwb.io import load_nwbfile
 
 from spiketools.utils.epoch import epoch_data_by_range, epoch_spikes_by_range
 from spiketools.utils.base import count_elements
+from spiketools.utils.trials import recombine_trial_data
 from spiketools.utils.extract import get_range, get_values_by_time_range, get_values_by_times
 
 ###################################################################################################
 ###################################################################################################
 
-def select_navigation(data, navigation_starts, navigation_stops):
+def select_navigation(data, navigation_starts, navigation_stops, recombine=True):
     """Helper function to select data from during navigation periods."""
 
     times_trials, values_trials = epoch_data_by_range(\
-        data.timestamps[:], data.data[:].T, navigation_starts, navigation_stops)
+        data.timestamps[:], data.data[:], navigation_starts, navigation_stops)
 
-    return times_trials, values_trials
-
-
-def stack_trials(times_trials, values_trials):
-    """Helper function to recombine data across trials."""
-
-    times = np.hstack(times_trials)
-    values = np.hstack(values_trials)
-
-    return times, values
+    if not recombine:
+        return times_trials, values_trials
+    else:
+        times, values = recombine_trial_data(times_trials, values_trials)
+        return times, values
 
 
 def normalize_data(data, feature_range):
-    """Helper function to normalize data into specific range. """
+    """Helper function to normalize data into specific range."""
 
     data_std = (data - data.min(axis=0)) / (data.max(axis=0) - data.min(axis=0))
     data_scaled = data_std * (feature_range[1] - feature_range[0]) + feature_range[0]
