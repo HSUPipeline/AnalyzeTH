@@ -2,8 +2,10 @@
 
 import numpy as np
 
-from spiketools.measures.spikes import compute_firing_rate
+from spiketools.measures.spikes import compute_firing_rate, compute_presence_ratio
+
 from spiketools.utils.base import count_elements
+from spiketools.utils.extract import drop_range
 from spiketools.utils.timestamps import convert_sec_to_min
 
 ###################################################################################################
@@ -53,10 +55,12 @@ def create_group_sessions_str(summary):
 
 ## SESSION REPORTS
 
-def create_units_info(units):
+def create_units_info(units, task_range=None, empty_ranges=None):
     """Create a dictionary of units related information."""
 
     units_info = {}
+    
+    all_spikes = [drop_range(uspikes, empty_ranges) for uspikes in units_df.spike_times]
 
     # Get units dataframe & select only the keep units
     units_df = units.to_dataframe()
@@ -66,7 +70,8 @@ def create_units_info(units):
     units_info['n_keep'] = int(sum(units.keep[:]))
     units_info['n_unit_channels'] = len(set(units_df.channel))
     units_info['location_counts'] = count_elements(units_df.location)
-    units_info['frs'] = [compute_firing_rate(spikes) for spikes in units_df.spike_times]
+    units_info['frs'] = [compute_firing_rate(uspikes, task_range) for uspikes in all_spikes]
+    units_info['presence_ratios'] = [compute_presence_ratio(spikes, 5.0, task_range) for uspikes in all_spikes]
 
     return units_info
 
@@ -149,16 +154,17 @@ def create_behav_str(behav_info):
 
 ## UNIT REPORTS
 
-def create_unit_info(unit):
+def create_unit_info(unit, task_range=None, empty_ranges=None):
     """Create a dictionary of unit information."""
 
-    spikes = unit['spike_times'].values[0]
+    spikes = drop_range(unit['spike_times'].values[0], empty_ranges)
 
     unit_info = {}
 
     unit_info['wvID'] = int(unit['wvID'].values[0])
     unit_info['n_spikes'] = len(spikes)
-    unit_info['firing_rate'] = float(compute_firing_rate(spikes))
+    unit_info['firing_rate'] = float(compute_firing_rate(spikes, task_range))
+    unit_info['presence_ratio'] = float(compute_presence_ratio(spikes, 5.0, task_range))
     unit_info['first_spike'] = spikes[0]
     unit_info['last_spike'] = spikes[-1]
     unit_info['location'] = unit['location'].values[0]
