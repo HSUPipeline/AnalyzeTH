@@ -11,6 +11,7 @@ from convnwb.utils.log import print_status
 
 from spiketools.measures.spikes import compute_isis
 from spiketools.measures.trials import compute_segment_frs
+from spiketools.measures.collections import detect_empty_time_ranges
 from spiketools.stats.shuffle import shuffle_spikes
 from spiketools.stats.trials import compare_pre_post_activity
 from spiketools.plts.spikes import plot_isis
@@ -27,18 +28,20 @@ from spiketools.spatial.place import compute_place_bins, compute_trial_place_bin
 from spiketools.spatial.target import compute_target_bins
 from spiketools.spatial.information import compute_spatial_information
 from spiketools.spatial.utils import convert_2dindices
+from spiketools.utils.timestamps import sum_time_ranges
+from spiketools.utils.trials import recombine_trial_data
 from spiketools.utils.extract import get_values_by_times
 from spiketools.utils.epoch import epoch_spikes_by_event, epoch_spikes_by_range
 from spiketools.utils.base import select_from_list, add_key_prefix, combine_dicts
 from spiketools.utils.run import create_methods_list
 
 # Import settings from local file
-from settings import RUN, PATHS, UNITS, METHODS, BINS, OCCUPANCY, WINDOWS, SURROGATES
+from settings import RUN, PATHS, UNITS, METHODS, QUALITY, BINS, OCCUPANCY, WINDOWS, SURROGATES
 
 # Import local code
 import sys
 sys.path.append('../code')
-from utils import select_navigation, stack_trials
+from utils import select_navigation
 from models import (create_df_place, fit_anova_place,
                     create_df_target, fit_anova_target,
                     create_df_serial, fit_anova_serial)
@@ -58,6 +61,7 @@ def main():
 
     # Collect a copy of all settings with a prefixes
     all_settings = [
+        add_key_prefix(QUALITY, 'quality'),
         add_key_prefix(BINS, 'bins'),
         add_key_prefix(OCCUPANCY, 'occupancy'),
         add_key_prefix(WINDOWS, 'windows'),
@@ -96,6 +100,9 @@ def main():
         # Get start and stop time of trials
         trial_starts = nwbfile.trials['start_time'].data[:]
         trial_stops = nwbfile.trials['stop_time'].data[:]
+        
+        # Get task time range
+        task_range = [0, nwbfile.trials.stop_time[-1]]
 
         # Get the navigation time ranges
         nav_starts = nwbfile.trials.navigation_start[:]
@@ -119,15 +126,14 @@ def main():
 
         # Get position data, selecting from navigation periods, and recombine across trials
         ptimes_trials, positions_trials = select_navigation(\
-            nwbfile.acquisition['position']['player_position'], nav_starts, nav_stops)
-        ptimes, positions = stack_trials(ptimes_trials, positions_trials)
+            nwbfile.acquisition['position']['player_position'], nav_starts, nav_stops, False)        
+        ptimes, positions = recombine_trial_data(ptimes_trials, positions_trials)
 
         # Get speed data, selecting from navigation periods, and recombining across trials
-        stimes, speed = stack_trials(*select_navigation(\
-            nwbfile.processing['position_measures']['speed'], nav_starts, nav_stops))
+        stimes, speed = select_navigation(nwbfile.processing['position_measures']['speed'], nav_starts, nav_stops, True)
 
         # Get the chest positions
-        chest_xs, chest_ys = nwbfile.acquisition['stimuli']['chest_positions'].data[:].T
+        chest_positions = nwbfile.acquisition['stimuli']['chest_positions'].data[:]
 
         ## ANALYZE UNITS
 
@@ -135,7 +141,14 @@ def main():
         n_units = len(nwbfile.units)
         keep_inds = np.where(nwbfile.units.keep[:])[0]
         n_keep = len(keep_inds)
-
+        
+        # Detect any empty ranges in the recording, add them to shuffle arguments, and update task range for drops
+        empty_ranges = detect_empty_time_ranges(\
+            [nwbfile.units.get_unit_spike_times(ii) for ii in keep_inds], QUALITY['empty_time_bin'], task_range)
+        SURROGATES['drop_time_range'] = empty_ranges
+        if empty_ranges:
+            task_range = [task_range[0], task_range[1] - sum_time_ranges(empty_ranges)]
+        
         # Loop across all units
         for uid in keep_inds:
 
@@ -156,7 +169,7 @@ def main():
             try:
 
                 # Collect information of interest
-                unit_info = create_unit_info(nwbfile.units[uid])
+                unit_info = create_unit_info(nwbfile.units[uid], task_range, empty_ranges)
 
                 # Extract spikes for a unit of interest
                 spikes = nwbfile.units.get_unit_spike_times(uid)
@@ -166,7 +179,7 @@ def main():
                 results['uid'] = int(uid)
                 results['session_id'] = nwbfile.session_id
                 results['subject_id'] = nwbfile.subject.subject_id
-                for field in ['wvID', 'keep', 'n_spikes', 'firing_rate',
+                for field in ['wvID', 'keep', 'n_spikes', 'firing_rate', 'presence_ratio',
                               'cluster', 'channel', 'location']:
                     results[field] = unit_info[field]
 
@@ -200,8 +213,7 @@ def main():
                 ch_x_edges, ch_y_edges = compute_bin_edges(positions, BINS['chest'], area_range)
 
                 # Assign each chest to a bin & compute equivalent 1d indices
-                chest_pos = np.array([chest_xs, chest_ys])
-                ch_xbin, ch_ybin = compute_bin_assignment(chest_pos, ch_x_edges, ch_y_edges)
+                ch_xbin, ch_ybin = compute_bin_assignment(chest_positions, ch_x_edges, ch_y_edges)
                 chbins = convert_2dindices(ch_xbin, ch_ybin, BINS['chest'])
 
                 # Compute chest occupancy
@@ -245,7 +257,7 @@ def main():
                 ## SURROGATES
 
                 # Create shuffled time series for comparison
-                times_shuffle = shuffle_spikes(spikes, SURROGATES['approach'], SURROGATES['n_shuffles'])
+                times_shuffle = shuffle_spikes(spikes, **SURROGATES)
 
                 # Collect list of which analyses are being run for surrogates, and initialize surrogate stores
                 surr_analyses = create_methods_list(METHODS)
