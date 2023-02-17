@@ -6,7 +6,7 @@ from pathlib import Path
 ## RUN SETTINGS
 
 # Set which task to process
-TASK = 'THF'
+TASK = 'THO'
 
 # Set files to ignore
 IGNORE = [
@@ -45,7 +45,7 @@ PATHS = {
 ## UNIT SETTINGS
 
 # Set whether to skip units that have already been processed
-SKIP_ALREADY_RUN = False
+SKIP_ALREADY_RUN = True
 SKIP_FAILED = False
 CONTINUE_ON_FAIL = True
 
@@ -59,14 +59,25 @@ UNITS = {
 ## METHOD SETTINGS
 
 # Define which method(s) to run (all within list will be run)
-PLACE_METHODS = []# ['ANOVA', 'INFO']    # 'info', 'anova'
-TARGET_METHODS = ['ANOVA']#, 'INFO']   # 'info', 'anova'
-SERIAL_METHODS = ['ANOVA']           # 'anova'
+PLACE_METHODS = ['ANOVA']       # 'info', 'anova'
+TARGET_METHODS = ['ANOVA']      # 'info', 'anova'
+SERIAL_METHODS = ['ANOVA']      # 'anova'
 
 METHODS = {
     'PLACE' : PLACE_METHODS,
     'TARGET' : TARGET_METHODS,
     'SERIAL' : SERIAL_METHODS,
+}
+
+###################################################################################################
+## QUALITY CONTROL SETTINGS
+
+## Unit quality check settings
+
+EMPTY_TIME_BIN = 0.25
+
+QUALITY = {
+    'empty_time_bin' : EMPTY_TIME_BIN,
 }
 
 ###################################################################################################
@@ -100,18 +111,16 @@ BINS = {
 
 ## OCCUPANCY SETTINGS
 
-OCC_MINIMUM = 1
+OCC_MINIMUM = 1.0
 OCC_SETNAN = True
 OCC_SPEED_THRESH = 5e-6
 OCC_TIME_THRESH = 0.25
-OCC_NORMALIZE = False
 
 OCCUPANCY = {
     'minimum' : OCC_MINIMUM,
     'set_nan' : OCC_SETNAN,
     'speed_threshold' : OCC_SPEED_THRESH,
     'time_threshold' : OCC_TIME_THRESH,
-    'normalize' : OCC_NORMALIZE,
 }
 
 ## TIME WINDOW SETTINGS
