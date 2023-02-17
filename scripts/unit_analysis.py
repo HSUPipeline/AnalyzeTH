@@ -1,5 +1,8 @@
 """Run TH analysis across all units."""
 
+import warnings
+warnings.filterwarnings("ignore")
+
 import traceback
 
 import numpy as np
@@ -22,8 +25,8 @@ from spiketools.plts.stats import plot_surrogates
 from spiketools.plts.annotate import color_pvalue
 from spiketools.plts.utils import make_grid, get_grid_subplot, save_figure
 from spiketools.stats.permutations import compute_surrogate_stats
-from spiketools.spatial.occupancy import (compute_occupancy, compute_bin_edges, compute_bin_assignment,
-                                          compute_bin_counts_pos, compute_bin_counts_assgn)
+from spiketools.spatial.occupancy import (compute_occupancy, compute_trial_occupancy, compute_bin_edges,
+                                          compute_bin_assignment, compute_bin_counts_pos, compute_bin_counts_assgn)
 from spiketools.spatial.place import compute_place_bins, compute_trial_place_bins
 from spiketools.spatial.target import compute_target_bins
 from spiketools.spatial.information import compute_spatial_information
@@ -134,9 +137,31 @@ def main():
 
         # Get the chest positions
         chest_positions = nwbfile.acquisition['stimuli']['chest_positions'].data[:]
+        
+        ## Compute Spatial Related Measures
+        
+        # Compute bin edges
+        x_bin_edges, y_bin_edges = compute_bin_edges(positions, BINS['place'], area_range=area_range)
+        
+        # Compute overall occupancy
+        occ = compute_occupancy(positions, ptimes, BINS['place'], area_range, speed, **OCCUPANCY)
+        
+        # Compute trial-level occupancy
+        trial_occupancy = compute_trial_occupancy(positions, ptimes, BINS['place'],
+                                                  nav_starts, nav_stops, area_range, speed, **OCCUPANCY)
+        
+        # Compute edges for chest binning
+        ch_x_edges, ch_y_edges = compute_bin_edges(positions, BINS['chest'], area_range)
 
+        # Assign each chest to a bin & compute equivalent 1d indices
+        ch_xbin, ch_ybin = compute_bin_assignment(chest_positions, ch_x_edges, ch_y_edges)
+        chbins = convert_2dindices(ch_xbin, ch_ybin, BINS['chest'])
+
+        # Compute chest occupancy
+        chest_occupancy = compute_bin_counts_assgn(BINS['chest'], ch_xbin, ch_ybin)
+        
         ## ANALYZE UNITS
-
+        
         # Get unit information
         n_units = len(nwbfile.units)
         keep_inds = np.where(nwbfile.units.keep[:])[0]
@@ -148,7 +173,7 @@ def main():
         SURROGATES['drop_time_range'] = empty_ranges
         if empty_ranges:
             task_range = [task_range[0], task_range[1] - sum_time_ranges(empty_ranges)]
-        
+
         # Loop across all units
         for uid in keep_inds:
 
@@ -194,30 +219,15 @@ def main():
                 empty_trials = select_from_list(all_chests, empty_mask)
                 full_trials = select_from_list(all_chests, full_mask)
 
-                # Compute bin edges
-                x_bin_edges, y_bin_edges = compute_bin_edges(\
-                    positions, BINS['place'], area_range=area_range)
-
                 # Get position values for each spike
                 spike_positions = get_values_by_times(ptimes, positions, spikes,
                                                       threshold=OCCUPANCY['time_threshold'])
 
-                # Compute occupancy
-                occ = compute_occupancy(positions, ptimes, BINS['place'],
-                                        area_range, speed, **OCCUPANCY)
-
                 # Compute spatial bin assignments & binned firing, and normalize by occupancy
-                place_bins = compute_bin_counts_pos(spike_positions, BINS['place'], area_range, occ)
-
-                # Compute edges for chest binning
-                ch_x_edges, ch_y_edges = compute_bin_edges(positions, BINS['chest'], area_range)
-
-                # Assign each chest to a bin & compute equivalent 1d indices
-                ch_xbin, ch_ybin = compute_bin_assignment(chest_positions, ch_x_edges, ch_y_edges)
-                chbins = convert_2dindices(ch_xbin, ch_ybin, BINS['chest'])
-
-                # Compute chest occupancy
-                chest_occupancy = compute_bin_counts_assgn(BINS['chest'], ch_xbin, ch_ybin)
+                #place_bins = compute_bin_counts_pos(spike_positions, BINS['place'], area_range, occ)
+                place_bins = compute_place_bins(spikes, positions, ptimes, BINS['place'], area_range,
+                                                speed, OCCUPANCY['speed_threshold'], OCCUPANCY['time_threshold'],
+                                                occ)
 
                 ## STATISTICS
 
@@ -233,10 +243,11 @@ def main():
                 if 'INFO' in METHODS['PLACE']:
                     results['place_info'] = compute_spatial_information(place_bins, occ)
                 if 'ANOVA' in METHODS['PLACE']:
-                    place_trial = compute_trial_place_bins(spikes, positions, ptimes, BINS['place'],
-                                                           nav_starts, nav_stops, area_range,
-                                                           speed, flatten=True, **OCCUPANCY)
-                    results['place_anova'] = fit_anova_place(create_df_place(place_trial))
+                    trial_place_bins = compute_trial_place_bins(\
+                        spikes, positions, ptimes, BINS['place'], nav_starts, nav_stops,
+                        area_range, speed, OCCUPANCY['speed_threshold'], OCCUPANCY['time_threshold'], 
+                        trial_occupancy=trial_occupancy, flatten=True)
+                    results['place_anova'] = fit_anova_place(create_df_place(trial_place_bins))
 
                 # Target cell analysis
                 target_frs = compute_segment_frs(spikes, seg_times)
@@ -273,9 +284,10 @@ def main():
                         surrs['place_info'][ind] = compute_spatial_information(surr_place_bins, occ, normalize=True)
 
                     if 'ANOVA' in METHODS['PLACE']:
-                        surr_place_trial = compute_trial_place_bins(shuffle, positions, ptimes, BINS['place'],
-                                                                    nav_starts, nav_stops, area_range,
-                                                                    speed, flatten=True, **OCCUPANCY)
+                        surr_place_trial = compute_trial_place_bins(\
+                            shuffle, positions, ptimes, BINS['place'], nav_starts, nav_stops,
+                            area_range, speed, OCCUPANCY['speed_threshold'], OCCUPANCY['time_threshold'],
+                            trial_occupancy=trial_occupancy, flatten=True)
                         surrs['place_anova'][ind] = fit_anova_place(create_df_place(surr_place_trial))
 
                     # TARGET
