@@ -2,15 +2,19 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 from spiketools.plts.task import plot_task_structure as _plot_task_structure
 from spiketools.plts.trials import plot_rasters
-from spiketools.plts.data import plot_barh
+from spiketools.plts.data import plot_barh, plot_dots
 from spiketools.plts.spatial import create_heat_title
 from spiketools.plts.utils import check_ax, savefig, make_grid, get_grid_subplot
 from spiketools.plts.style import set_plt_kwargs, drop_spines
 from spiketools.plts.annotate import add_vlines, add_box_shades, add_hlines
 from spiketools.plts.spatial import plot_positions, plot_heatmap
+
+from utils import corr_stats
+from maps import ANALYSIS_MAP
 
 ###################################################################################################
 ###################################################################################################
@@ -174,3 +178,31 @@ def plot_example_target(n_bins, target_bins, reshaped_target_bins, chests_per_bi
                            xlim=area_range[0], ylim=area_range[1])
 
         ax1.axis("on")
+
+
+@savefig
+@set_plt_kwargs
+def plot_stats_dots(df, nb, th, ax=None):
+    """Plot scatter plots across the statistics for different measures."""
+
+    labels = ['null', '1B', 'TH', 'Both']
+    
+    c1 = cm.magma_r(np.linspace(0.05, 1, 4))[0]
+    
+    colors = [c1, 'purple', 'green', 'black']
+    
+    sig = df[ANALYSIS_MAP[nb]['sig']].astype(int) + df[ANALYSIS_MAP[th]['sig']] * 2
+    
+    ax = check_ax(ax, figsize=(5, 4))
+    for value, label, color in zip(set(sig), labels, colors):
+        plot_dots(df[ANALYSIS_MAP[nb]['stat']].values[sig == value],
+                  df[ANALYSIS_MAP[th]['stat']].values[sig == value],
+                  xlabel=ANALYSIS_MAP[nb]['label'], ylabel=ANALYSIS_MAP[th]['label'],
+                  label=label, color=color, alpha=0.75, ax=ax)
+        
+    ax.legend(prop={'size': 10}, loc=1)
+    
+    stats = corr_stats(df, nb, th)
+    ax.text(0.85, 0.05, 'r={:1.3f}'.format(stats['all'].correlation),
+            horizontalalignment='center', verticalalignment='center',
+            fontsize=12, transform=ax.transAxes)
