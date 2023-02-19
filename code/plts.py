@@ -73,7 +73,7 @@ def plot_spikes_trial(spikes, tspikes, nav_spikes, nav_starts, nav_stops, tnav_s
         add_hlines(hlines, ax=ax2, color='green', alpha=0.4)
 
     for cax in [ax0, ax1, ax2, ax2b]:
-        drop_spines(cax, ['top', 'right'])
+        drop_spines(['top', 'right'], cax)
 
 
 @savefig
@@ -134,8 +134,8 @@ def plot_place_target_comparison(place_bin_frs, target_bin_frs, surr_place, surr
     plot_surrogates(surr_target, n_bin, favl_target, pval_target, ax=get_grid_subplot(grid, 2, 1))
 
     get_grid_subplot(grid, 2, 0).set(xlabel='F-statistics', ylabel='count')
-    drop_spines(get_grid_subplot(grid, 2, 0), ['top', 'right'])
-    drop_spines(get_grid_subplot(grid, 2, 1), ['top', 'right'])
+    drop_spines(['top', 'right'], get_grid_subplot(grid, 2, 0))
+    drop_spines(['top', 'right'], get_grid_subplot(grid, 2, 1))
 
 
 @savefig
