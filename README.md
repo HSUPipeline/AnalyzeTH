@@ -2,9 +2,20 @@
 
 Analysis repository for Treasure Hunt.
 
+[![Paper](https://img.shields.io/badge/DOI-10.1002/hipo.23539-informational.svg)](https://doi.org/10.1002/hipo.23539)
+
 ## Overview
 
 This repository analyses data from the Treasure Hunt task, a spatial-navigation memory task, with data from implanted microwires.
+
+## Reference
+
+This project is described in the following paper:
+
+    Donoghue T, Cao R, Han CZ, Holman CM, Brandmeir NJ, Wang S, Jacobs J (2023). Single neurons in the human medial 
+    temporal lobe flexibly shift representations across spatial and memory tasks. Hippocampus. DOI: 10.1002/hipo.23539
+
+Direct Link: https://doi.org/10.1002/hipo.23539
 
 ## Requirements
 
