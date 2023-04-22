@@ -1,6 +1,6 @@
 # Analysis Notebooks
 
-The following notebooks step through analysis of the TH data.
+The following notebooks step through analysis of the Treasure Hunt (TH) data.
 
 ## Treasure Hunt Analyses
 
@@ -47,15 +47,3 @@ This notebook demonstrates the report that is created at the session level.
 ### A3-Report-Unit
 
 This notebook demonstrates the report that is created at the unit level.
-
-## Across Task Analyses
-
-This section includes analyses across both the 1-back and the Treasure Hunt task.
-
-### B1- BehaviorAnalyses
-
-This notebook examines behavioral results across both tasks.
-
-### B2-OverlapAnalyses
-
-This notebook examines neural results across both tasks.

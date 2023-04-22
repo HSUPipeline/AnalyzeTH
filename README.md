@@ -6,7 +6,22 @@ Analysis repository for Treasure Hunt.
 
 ## Overview
 
-This repository analyses data from the Treasure Hunt task, a spatial-navigation memory task, with data from implanted microwires.
+This repository analyses data from the Treasure Hunt (TH) task, a spatial-navigation memory task, with data from implanted microwires.
+
+## Project Guide
+
+You can step through all the analyses and results in this project by stepping through the notebooks folders.
+
+Note that some parts of the project, including running analyses across the whole dataset, 
+are done by stand alone scripts, which are available in the `scripts` folder.
+
+## Reference
+
+The project is described in the following preprint: [LINK COMING SOON]
+
+    PREPRINT INFO
+
+Direct Link: XX
 
 ## Reference
 
@@ -32,7 +47,8 @@ The full list of dependencies is listed in `requirements.txt`.
 
 This repository is set up in the following way:
 - `code/` contains custom code and utilities for doing the analyses
-- `notebooks/` contains notebooks for exploring analyses
+- `notebooks_overlap/` contains notebooks that step through analyses combining both tasks
+- `notebooks_th/` contains notebooks that step through analyses of the TH task
 - `scripts/` contains stand alone scripts
 
 ## Data
