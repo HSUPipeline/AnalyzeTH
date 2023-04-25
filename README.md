@@ -17,18 +17,11 @@ are done by stand alone scripts, which are available in the `scripts` folder.
 
 ## Reference
 
-The project is described in the following preprint: [LINK COMING SOON]
+The project is described in the following paper:
 
-    PREPRINT INFO
-
-Direct Link: XX
-
-## Reference
-
-This project is described in the following paper:
-
-    Donoghue T, Cao R, Han CZ, Holman CM, Brandmeir NJ, Wang S, Jacobs J (2023). Single neurons in the human medial 
-    temporal lobe flexibly shift representations across spatial and memory tasks. Hippocampus. DOI: 10.1002/hipo.23539
+    Donoghue, T., Cao, R., Han, C. Z., Holman, C. M., Brandmeir, N. J., Wang, S., & Jacobs, J. (2023). Single 
+    neurons in the human medial temporal lobe flexibly shift representations across spatial and memory tasks. 
+    Hippocampus, 33(5), 600–615. DOI: 10.1002/hipo.23539
 
 Direct Link: https://doi.org/10.1002/hipo.23539
 
