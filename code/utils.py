@@ -1,6 +1,7 @@
 """Utilities for working with Treasure Hunt data."""
 
 import numpy as np
+from scipy.stats import spearmanr
 
 from convnwb.io import load_nwbfile
 
@@ -9,6 +10,8 @@ from spiketools.utils.epoch import epoch_data_by_range, epoch_spikes_by_range
 from spiketools.utils.base import count_elements
 from spiketools.utils.trials import recombine_trial_data
 from spiketools.utils.extract import get_range, get_values_by_time_range, get_values_by_times
+
+from maps import ANALYSIS_MAP
 
 ###################################################################################################
 ###################################################################################################
@@ -121,3 +124,32 @@ def normalize_spikes_by_segment(t_spikes, start, stop, feature_range):
         seg_spikes_norm.append(spikes_norm.flatten())
 
     return seg_spikes_norm
+
+
+def corr_stats(df, nb, th):
+    """Calculate correlations between statistic measures."""
+    
+    sig = df[ANALYSIS_MAP[nb]['sig']].astype(int) + df[ANALYSIS_MAP[th]['sig']] * 2
+    keys = {0 : 'null', 1 : 'NB', 2 : 'TH', 3 : 'both'}
+    
+    results = {}
+    
+    results['all'] = spearmanr(df[ANALYSIS_MAP[nb]['stat']].values,
+                               df[ANALYSIS_MAP[th]['stat']].values, 
+                               nan_policy='omit')
+    
+    for value in set(sig):
+        results[keys[value]] = spearmanr(df[ANALYSIS_MAP[nb]['stat']].values[sig == value],
+                                         df[ANALYSIS_MAP[th]['stat']].values[sig == value],
+                                         nan_policy='omit')
+
+    return results    
+
+
+def print_corrs(stats, label=None):
+    """Print out stats correlations, from a dictionary of correlation results."""
+    
+    if label:
+        print(label)
+    for key, val in stats.items():
+        print('\t {} \t- r = {:+1.2f} \t p = {:1.2f}'.format(key, val.correlation, val.pvalue))

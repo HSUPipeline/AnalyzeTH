@@ -2,9 +2,28 @@
 
 Analysis repository for Treasure Hunt.
 
+[![Paper](https://img.shields.io/badge/DOI-10.1002/hipo.23539-informational.svg)](https://doi.org/10.1002/hipo.23539)
+
 ## Overview
 
-This repository analyses data from the Treasure Hunt task, a spatial-navigation memory task, with data from implanted microwires.
+This repository analyses data from the Treasure Hunt (TH) task, a spatial-navigation memory task, with data from implanted microwires.
+
+## Project Guide
+
+You can step through all the analyses and results in this project by stepping through the notebooks folders.
+
+Note that some parts of the project, including running analyses across the whole dataset, 
+are done by stand alone scripts, which are available in the `scripts` folder.
+
+## Reference
+
+The project is described in the following paper:
+
+    Donoghue, T., Cao, R., Han, C. Z., Holman, C. M., Brandmeir, N. J., Wang, S., & Jacobs, J. (2023). Single 
+    neurons in the human medial temporal lobe flexibly shift representations across spatial and memory tasks. 
+    Hippocampus, 33(5), 600–615. DOI: 10.1002/hipo.23539
+
+Direct Link: https://doi.org/10.1002/hipo.23539
 
 ## Requirements
 
@@ -21,7 +40,8 @@ The full list of dependencies is listed in `requirements.txt`.
 
 This repository is set up in the following way:
 - `code/` contains custom code and utilities for doing the analyses
-- `notebooks/` contains notebooks for exploring analyses
+- `notebooks_overlap/` contains notebooks that step through analyses combining both tasks
+- `notebooks_th/` contains notebooks that step through analyses of the TH task
 - `scripts/` contains stand alone scripts
 
 ## Data
