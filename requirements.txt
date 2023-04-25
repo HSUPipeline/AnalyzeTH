@@ -5,5 +5,5 @@ matplotlib
 seaborn
 statsmodels
 pynwb
-convnwb @ git+https://github.com/JacobsSU/convnwb.git@main
-spiketools @ git+https://github.com/spiketools/spiketools.git@main
+spiketools
+convnwb @ git+https://github.com/HSUPipeline/convnwb.git@main
