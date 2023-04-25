@@ -4,7 +4,7 @@ import numpy as np
 
 from convnwb.io import get_files, load_nwbfile
 from convnwb.io.utils import file_in_list
-from convnwb.utils.log import print_status
+from convnwb.run import print_status
 
 from spiketools.plts.data import plot_hist, plot_text
 from spiketools.plts.utils import make_grid, get_grid_subplot, save_figure

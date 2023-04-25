@@ -1,13 +1,11 @@
 """Run TH analysis across all units."""
 
-import traceback
-
 import numpy as np
 from scipy.stats import sem
 
-from convnwb.io import load_nwbfile, get_files, save_json, save_txt
+from convnwb.io import load_nwbfile, get_files, save_json
 from convnwb.io.utils import file_in_list
-from convnwb.utils.log import print_status
+from convnwb.run import print_status
 
 from spiketools.measures.spikes import compute_isis
 from spiketools.measures.trials import compute_segment_frs
@@ -370,7 +368,7 @@ def main():
                                     title='Target Surrogates (INFO)',
                                     title_color=color_pvalue(results['target_info_surr_p_val']),
                                     ax=get_grid_subplot(grid, 5, 2))
-                    
+
                 # ax60: serial position surrogates
                 if 'ANOVA' in METHODS['SERIAL']:
                     plot_surrogates(surrs['serial_anova'], results['serial_anova'],
@@ -391,10 +389,9 @@ def main():
                 save_figure('unit_report_' + name + '.pdf', reports_folder, close=True)
 
             except Exception as excp:
-                if not UNITS['CONTINUE_ON_FAIL']:
-                    raise
-                print_status(RUN['VERBOSE'], 'issue running unit # {}'.format(uid), 2)
-                save_txt(traceback.format_exc(), name, folder=results_folder / 'zFailed')
+
+                catch_error(UNITS['CONTINUE_ON_FAIL'], name, results_folder / 'zFailed',
+                            RUN['VERBOSE'], 'issue running unit #: \t{}')
 
         # Close the nwbfile
         io.close()
