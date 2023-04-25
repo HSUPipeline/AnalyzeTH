@@ -4,7 +4,7 @@ Analysis repository for Treasure Hunt.
 
 [![Paper](https://img.shields.io/badge/paper-10.1002/hipo.23539-informational.svg)](https://doi.org/10.1002/hipo.23539)
 [![Data](https://img.shields.io/badge/data-ConvertTH-lightgrey)](https://github.com/HSUPipeline/ConvertTH)
-[![Template](https://img.shields.io/badge/template-HSUPipeline/AnalyzeTEMPLATE-informational.svg)](https://github.com/HSUPipeline/AnalyzeTEMPLATE)
+[![Template](https://img.shields.io/badge/template-HSUPipeline/AnalyzeTEMPLATE-yellow.svg)](https://github.com/HSUPipeline/AnalyzeTEMPLATE)
 
 ## Overview
 
