@@ -6,7 +6,7 @@ import matplotlib.cm as cm
 
 from spiketools.plts.task import plot_task_structure as _plot_task_structure
 from spiketools.plts.trials import plot_rasters
-from spiketools.plts.data import plot_barh, plot_dots
+from spiketools.plts.data import plot_barh, plot_scatter
 from spiketools.plts.spatial import create_heat_title
 from spiketools.plts.utils import check_ax, savefig, make_grid, get_grid_subplot
 from spiketools.plts.style import set_plt_kwargs, drop_spines
@@ -195,7 +195,7 @@ def plot_stats_dots(df, nb, th, ax=None):
     
     ax = check_ax(ax, figsize=(5, 4))
     for value, label, color in zip(set(sig), labels, colors):
-        plot_dots(df[ANALYSIS_MAP[nb]['stat']].values[sig == value],
+        plot_scatter(df[ANALYSIS_MAP[nb]['stat']].values[sig == value],
                   df[ANALYSIS_MAP[th]['stat']].values[sig == value],
                   xlabel=ANALYSIS_MAP[nb]['label'], ylabel=ANALYSIS_MAP[th]['label'],
                   label=label, color=color, alpha=0.75, ax=ax)
