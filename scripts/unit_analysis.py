@@ -8,7 +8,8 @@ from scipy.stats import sem
 
 from convnwb.io import load_nwbfile, get_files, save_json
 from convnwb.io.utils import file_in_list
-from convnwb.run import print_status
+from convnwb.utils.log import print_status
+from convnwb.utils.run import catch_error
 
 from spiketools.measures.spikes import compute_isis
 from spiketools.measures.trials import compute_segment_frs

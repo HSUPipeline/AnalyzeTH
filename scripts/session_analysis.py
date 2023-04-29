@@ -4,7 +4,7 @@ import numpy as np
 
 from convnwb.io import get_files, save_json, load_nwbfile
 from convnwb.io.utils import file_in_list
-from convnwb.run import print_status
+from convnwb.utils.log import print_status
 
 from spiketools.spatial.occupancy import compute_occupancy
 from spiketools.utils.base import add_key_prefix, combine_dicts
