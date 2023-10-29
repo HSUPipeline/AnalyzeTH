@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite it using the metadata from this file.
+type: software
+title: 'AnalyzeTH'
+authors:
+- given-names: 'Thomas'
+  family-names: 'Donoghue'
+  orcid: 'https://orcid.org/0000-0001-5911-0472'
+- given-names: 'Claire Z'
+  family-names: 'Han'
+- given-names: 'Runnan'
+  family-names: 'Cao'
+- given-names: 'Joshua'
+  family-names: 'Jacobs'
+repository-code: 'https://github.com/HSUPipeline/AnalyzeTH'
+license: MIT
+preferred-citation:
+  type: article
+  authors:
+  - given-names: 'Thomas'
+    family-names: 'Donoghue'
+    orcid: 'https://orcid.org/0000-0001-5911-0472'
+  - given-names: 'Runnan'
+    family-names: 'Cao'
+  - given-names: 'Claire Z'
+    family-names: 'Han'
+  - given-names: 'Cameron M'
+    family-names: 'Holman'
+  - given-names: 'Nicholas J'
+    family-names: 'Brandmeir'
+  - given-names: 'Shuo'
+    family-names: 'Wang'
+  - given-names: 'Joshua'
+    family-names: 'Jacobs'
+  doi: '10.1002/hipo.23539'
+  journal: 'Hippocampus'
+  title: 'Single neurons in the human medial temporal lobe flexibly shift representations across spatial and memory tasks'
+  issue: 5
+  year: 2023
+  volume: 33
+  start: 600
+  end: 615
